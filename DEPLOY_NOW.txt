@@ -1,0 +1,14 @@
+HMG Academy CBT Pro — Enhanced Quick Deploy
+
+1. Upload everything in this folder to your GitHub repository root.
+2. Ensure the assets folder is uploaded: assets/hmg-academy-logo.png.
+3. Enable GitHub Pages: Settings → Pages → Deploy from branch → main → /root.
+4. Open index.html, teacher.html, student.html, and admin.html after deployment.
+5. In Teacher Dashboard → Settings, run all Supabase SQL setup blocks and Live Diagnostic.
+6. Configure Supabase Auth redirect URLs for /teacher.html, /student.html, and /admin.html.
+7. Create a test exam, test both link and code access, submit a result, export Item Analysis CSV, and verify Admin Panel counts.
+
+Full guides:
+- ENHANCEMENT_REPORT_DEPLOYMENT.md
+- ENTERPRISE_DEPLOYMENT_GUIDE.md
+- DIAGNOSIS_FEATURES_DEPLOYMENT.md
