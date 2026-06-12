@@ -1,132 +1,220 @@
-# HMG Academy CBT — Complete Feature Guide
+# HMG Academy CBT Pro — Features Guide
 
-This document explains **every feature** in the system, portal by portal, including the pre-existing features (preserved) and the new additions from this enhancement round. The platform is **100% free**: pure HTML/CSS/JavaScript on the front end and **Supabase free tier** as the database/auth backend. **No paid AI API is used** — all scoring and insights are browser logic and rules.
+## Teacher Dashboard (teacher.html)
+
+### Authentication
+- Email/Password Login via Supabase Auth
+- Account Registration (self-service signup)
+- Password Reset (email-based recovery)
+- Account Approval (admin workflow)
+- Session Management (auto-logout on inactivity)
+- Password Strength Meter (visual security indicator)
+
+### Dashboard Home
+- Overview Stats (total exams, submissions, pass rate, integrity flags)
+- Recent Activity (latest submissions with scores)
+- Quick Actions (shortcuts to create exam, results, assessments, settings)
+- Live Exams (summary of active exams)
+
+### Create Exam
+- Academic Context: Subject, Class, Term, Type, Topic, Session
+- Duration: Configurable in minutes
+- Attempt Limits: Strict (1), Standard (2), Unlimited
+- Question Selection: Specific count or all
+- Pass Mark: Configurable percentage
+- Auto-Close: Scheduled closure date/time
+- Exam Status: Open immediately or locked
+- Student Access Mode: Open or Registered
+
+### Question Upload Methods
+- CSV Upload (14-column format, all question types)
+- Manual Entry (type directly with type-specific forms)
+- Excel XLSX Import (from spreadsheets)
+- PDF Import (basic text extraction)
+- Template Download (pre-formatted CSV and student roster templates)
+
+### 11 Question Types
+1. Multiple Choice (mcq) — One correct answer from A, B, C, D
+2. Multiple Response (mrq) — One or more correct answers (checkboxes)
+3. True/False (tf) — Binary choice
+4. Short Answer (short) — Type a word or phrase
+5. Numeric (numeric) — Number with configurable tolerance
+6. Matching (matching) — Pair left and right items
+7. Ordering (ordering) — Arrange items in correct sequence
+8. Cloze (cloze) — Fill-in-the-blank (multiple blanks)
+9. Essay (essay) — Keyword-based evaluation
+10. Categorization (categorization) — Classify items into groups
+11. Multi-Numeric (multi_numeric) — Multiple numeric answers
+
+### Assessments Management
+- Search and Filter: By subject, class, term, type, status, keyword
+- Sort: By date, subject, or class
+- Edit: Full editing of ALL exam properties (NEW!)
+- Preview: See exactly what students will see
+- Question Bank: View and edit individual questions
+- Duplicate: Create a copy as a new locked draft
+- Open/Lock: Toggle exam availability instantly
+- Schedule: Set auto-close date and time
+- Copy Code: Copy 6-character access code to clipboard
+- Copy Link: Copy student access URL to clipboard
+- Instructions: Copy full student instructions to clipboard
+- Print Sheet: Print invigilation/access sheet
+- Package Export: Download exam as reusable JSON file
+- WhatsApp Share: Generate and share WhatsApp link
+- Delete: Permanently remove exam with confirmation
+
+### Full Exam Editing (NEW!)
+- Subject: Change exam subject name
+- Class/Arm: Change class designation
+- Term: Change term (1st/2nd/3rd)
+- Exam Type: Change assessment type
+- Topic: Change topic/chapter name
+- Session: Change academic session
+- Duration: Change time limit in minutes
+- Attempts: Change allowed attempts (1, 2, or unlimited)
+- Questions to Pull: Change number of questions from bank
+- Pass Mark: Change passing percentage threshold
+- Auto-Close Date: Change or remove scheduled closure
+- Open/Lock Status: Change availability
+- Exam Mode: Change between Open and Registered
+- Add Questions: Append new questions via CSV upload or manually
+- View Info: Access code, student link, question count, submission count
+
+### Results Management
+- Leaderboard (ranked student scores)
+- Filter (by exam, date range, score range)
+- Answer Breakdown (per-student correct/wrong/skipped)
+- Score Distribution (visual histogram)
+- Print Slips (individual result certificates)
+- CSV Export (download all results as spreadsheet)
+- Real-time Polling (auto-refresh for new submissions)
+- Proctor Photos (view student photos if captured)
+
+### Students Management
+- Class Roster (upload and manage student lists)
+- Student Search (find students by name or ID)
+- CSV Import (bulk upload student data)
+- Registered Mode (restrict exams to enrolled students)
+
+### Analytics
+- Score Distribution Chart (visual histogram)
+- Performance Bands (Distinction 90-100%, Credit 70-89%, Pass 50-69%, Near Miss 40-49%, Fail 0-39%)
+- Per-Question Analysis (identify most-missed questions)
+- Pass/Fail Ratio (overall pass rate visualization)
+- Average Time Analysis (time spent per question)
+- Trend Charts (performance over time)
+- Exam Comparison (compare results across assessments)
+- Difficulty Index (which questions are hardest/easiest)
+- Insights and Recommendations (AI-free, rule-based analysis)
+
+### Settings
+- Profile Management (update name and email)
+- Password Change (secure password update)
+- Supabase Setup Guide (step-by-step SQL instructions)
+- Database Schema (table definitions and relationships)
+- RLS Policies (row-level security configuration)
+- Deployment Checklist (pre-launch verification)
+- System Information (version, dependencies, configuration)
+
+### Question Bank Editor
+- View All Questions (complete list for any exam)
+- Search Questions (filter by keyword)
+- Edit Individual Questions (modify text, options, answers)
+- Add New Questions (insert into existing bank)
+- Delete Questions (remove unwanted questions)
+- Export as CSV (download question bank for backup)
+- Save Changes (persist all edits to Supabase)
 
 ---
 
-## A. The three portals (+ tools)
+## Student Portal (student.html)
 
-| File | Portal | Who uses it |
-|---|---|---|
-| `index.html` | Public landing page & role selector | Everyone |
-| `teacher.html` | Teacher Dashboard | Teachers / tutors |
-| `student.html` | Student Exam Portal | Students (no account) |
-| `admin.html` | Admin Panel | Platform administrators |
-| `feature_guide.html` | In-app feature guide | Everyone |
-| `deployment_validator.html` | Browser-only readiness checker | Deployer/admin |
-| **`link_checker.html`** | **NEW — Exam Link & Code Health Checker** | Teachers & students |
-| `offline.html` | Offline fallback page (PWA) | Auto-shown when offline |
+### Exam Access
+- Code Entry (enter 6-character exam access code)
+- Direct Link (click exam link to auto-load exam)
+- Name Input (enter student name for identification)
+- Integrity Pledge (accept exam rules before starting)
 
----
+### During Exam
+- Countdown Timer (live with color warnings: green -> yellow -> red)
+- Question Navigator (grid showing answered/flagged status)
+- Answer Selection (click to select answer for current question)
+- Flag Questions (mark uncertain questions for later review)
+- Auto-Save (progress saved locally every 30 seconds)
+- Tab-Switch Detection (warn if student leaves exam page)
+- Progress Bar (visual indicator of completion)
+- Navigation Buttons (Previous/Next question controls)
 
-## B. Student Portal (`student.html`)
-
-### B1. Two ways to access an exam (the core flow — now fixed)
-- **Direct link:** `student.html?code=ABC123` (teacher shares this; one tap to open).
-- **Manual code:** student types/pastes the 6-character code on the entry screen.
-- The parser `extractExamCode()` accepts a **raw code**, a **full link**, a `#hash`, or `?code=`/`?exam=`/`?c=` query forms, and normalises to upper-case. *(This is the function that contained the reported bug; it is now corrected and unit-tested.)*
-
-### B2. Two exam modes
-- **Open mode:** student enters name + class, accepts the integrity pledge, and starts. No account.
-- **Registered mode:** student verifies a **Student ID** against the teacher's class roster (`students` table) before starting; identity strip is shown during the exam.
-
-### B3. Taking the exam
-- **Randomised questions & options** per student (shuffle) to reduce copying — original CSV index is preserved internally so grading always maps correctly.
-- **Question selection:** teacher can deliver a random subset (`select_count`) from a larger bank.
-- **Countdown timer** with colour warnings (normal → amber ≤5 min → red ≤2 min); auto-submits at zero.
-- **Question navigator** grid; **flagging** questions for review; **jump to first unanswered**.
-- **Answer draft auto-save** to the device, restored if the page reloads mid-exam.
-- **On-screen scientific calculator** (sin/cos/tan, ln/log, powers, roots, factorial, inverse, etc.) with history.
-- **One submission only** — prevents duplicate submissions; enforces the per-exam **attempt limit**.
-
-### B4. 11+ question types
-`mcq` (single choice), `mrq` (multiple response, optional all-or-nothing), `tf` (true/false), `short` (short text/keyword), `numeric` (number with tolerance), `multi_numeric` (multi-blank numeric), `matching`, `ordering`, `cloze` (multi-blank fill-in), `categorization`/classification, and `essay` (keyword-based rubric scoring — **no AI API**).
-
-### B5. Integrity / proctoring (free, browser-based)
-- **Fullscreen enforcement** with re-entry prompts.
-- **Tab-switch / window-blur detection**, **copy/cut/paste/right-click blocking**, **devtools size-trap**, and a **violation engine** with a max-violations threshold and optional auto-submit.
-- **Identity photo capture** + **live camera proctoring** with periodic snapshots and **multi-face detection** via the open-source `face-api.js` loaded from a free CDN. Gracefully **skips** if the camera is unavailable (never blocks the exam because of hardware).
-- **Integrity pledge** checkbox required before starting.
-
-### B6. Results
-- **Instant auto-grading** and a **shareable result certificate** with score and grade.
-- **Result review** with the teacher's **per-question explanations**.
-- **Emergency result backup**: if the network/database save fails, the student can **download their result payload** so nothing is lost.
-
-### B7. NEW resilience additions
-- **🔄 Retry button** on connection errors during exam load.
-- **Corrupt/empty exam guards** with clear, actionable messages.
-- **"Trouble getting in?" link** to the new Health Checker.
+### After Submission
+- Instant Results (score displayed immediately after submission)
+- Answer Review (see correct answers with teacher explanations)
+- Result Certificate (printable certificate with score and grade)
+- Performance Summary (breakdown by question type)
+- Time Report (how long the exam took)
 
 ---
 
-## C. Teacher Dashboard (`teacher.html`)
+## Admin Panel (admin.html)
 
-### C1. Authentication & account
-- Supabase email/password login, session refresh, **inactivity auto-logout**, last-login display.
+### Platform Management
+- Teacher Oversight (view all registered teachers)
+- Account Approval (approve or reject new teacher accounts)
+- Account Suspension (deactivate teacher access)
+- Platform Analytics (system-wide usage statistics)
+- Exam Oversight (view all exams across all teachers)
+- Result Management (access all student results platform-wide)
 
-### C2. Creating exams — four import methods
-- **CSV upload** (with a provided `further_maths_sample.csv` template).
-- **Manual builder** (`tab-manual`).
-- **PDF import** (`tab-pdf`) and **XLSX import** (`tab-xlsx`).
-- Configure **subject/class/term/topic/type/session/passmark** (encoded in the `subject` meta field), **duration**, **attempt limit**, **question count**, **randomisation**, and **exam mode** (open/registered).
-
-### C3. Sharing
-- Auto-generated **6-character access code**.
-- **Direct student link** (`student.html?code=XXXXXX`) that auto-detects the current deployment (Vercel/GitHub Pages/Cloudflare).
-- **Copy link**, **copy code**, and **WhatsApp share** with a pre-filled message.
-
-### C4. Managing exams & students
-- **Assessments list**: open/close exams, **regenerate code**, edit, delete.
-- **Auto-close scheduler** (`close_at`) — enforced on **both** the dashboard poller **and** the student side.
-- **Students/roster** management for registered mode.
-
-### C5. Results & analytics
-- **Live results polling** (~15s) for new submissions.
-- **Leaderboard**, score distribution, **pass/fail ratios**, average time-per-question, and other charts.
-- **CSV export** of results.
-
-### C6. Settings
-- Institution branding, student base-URL display, backup/export workflows.
+### Security and Configuration
+- RLS Management (configure database security policies)
+- System Settings (global platform configuration)
+- Backup and Restore (full system data export/import)
+- Audit Logs (track all platform activities)
 
 ---
 
-## D. Admin Panel (`admin.html`)
-- Admin-only secure login (checks `is_admin`/`status` on the `profiles` table).
-- **Manage teachers & accounts**, platform-wide analytics/reports, and system configuration.
-- Uses the same Supabase project; service-key paths are guarded behind admin auth.
+## Technical Features
+
+### Data Storage
+- Supabase Database (PostgreSQL with real-time sync)
+- Row-Level Security (per-teacher data isolation)
+- Local Storage (browser-based auto-save during exams)
+- CSV Import/Export (bulk data operations)
+- JSON Package (full exam backup and restore)
+
+### Security
+- Authentication (Supabase Auth email/password)
+- RLS Policies (database-level access control)
+- One Submission (prevents duplicate exam attempts)
+- Tab-Switch Detection (exam integrity monitoring)
+- Auto-Logout (session timeout after inactivity)
+- Password Hashing (secure credential storage via Supabase)
+
+### Accessibility
+- Responsive Design (works on mobile, tablet, and desktop)
+- No App Required (browser-based access)
+- No Student Accounts (simple code-based access)
+- PWA Support (installable on mobile devices)
+- Offline Capability (auto-save works without internet)
+
+### Performance
+- Static Files (no server-side rendering needed)
+- CDN Delivery (fast loading via global CDN)
+- Minimal Dependencies (only Chart.js for analytics)
+- Optimized Assets (compressed images and minified code)
 
 ---
 
-## E. Free utility tools
-
-### E1. NEW — Exam Link & Code Health Checker (`link_checker.html`)
-Paste a link or code and get a 7-step health report (code readable → DB reachable → exam found → open status → schedule → questions valid → final verdict) plus a one-click "open student page". Pre-fillable via `?code=`. Prevents the entire "students can't get in" support category.
-
-### E2. Deployment Validator (`deployment_validator.html`)
-Browser-only readiness checker for required files, PWA assets, Supabase configuration, and security basics.
-
-### E3. In-app Feature Guide (`feature_guide.html`)
-Human-readable walkthrough of portals, features, question types and deployment, for school administrators.
-
----
-
-## F. Platform-wide (PWA & security)
-- **Installable PWA** (`manifest.webmanifest`) — works on phones/tablets, "Add to Home Screen".
-- **Service worker** (`sw.js`) caches the **static shell only** and **never** intercepts Supabase/API/CDN calls, so live data is always fresh. Cache version **bumped to `v5`** to push the bug fix to returning devices.
-- **Offline fallback** page for navigation when offline.
-- **Security headers** via `_headers` (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`).
-- **Cost model:** Supabase free tier + free static hosting + free CDN libraries = **₦0 running cost**; **no paid AI API**.
+## Cost Structure
+| Component | Service | Cost |
+|-----------|---------|------|
+| Database | Supabase Free Tier | $0/month (up to 500MB) |
+| Hosting | Vercel/Netlify/GitHub Pages | $0/month |
+| Authentication | Supabase Auth | $0/month (up to 50,000 MAU) |
+| AI APIs | Not Used | $0 |
+| Domain | Custom domain | ~5000 Naira/year |
+| Total | | ~5000 Naira/year |
 
 ---
 
-## G. What changed in this enhancement round (summary)
-| Area | Change | Type |
-|---|---|---|
-| Student access parser | Fixed corrupted `\b` regex | **Bug fix** |
-| Student exam load | Retry button, corrupt/empty-exam guards | Enhancement (additive) |
-| New tool | `link_checker.html` health checker | New feature |
-| PWA | Cached new tool, bumped cache `v4→v5` | Maintenance |
-| Docs | This guide + fix report + deployment guide | Documentation |
-
-> **No pre-existing feature was removed or changed in behaviour.** Every addition is backward-compatible.
+HMG Academy CBT Pro v2.0 — Learning Deliberately. Teaching Authentically.
+© 2026 HMG Concepts
