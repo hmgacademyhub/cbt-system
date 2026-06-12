@@ -357,7 +357,22 @@
         .status-error{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.3);}
         .status-info{background:rgba(16,185,129,0.1);color:var(--primary);border:1px solid rgba(16,185,129,0.3);}
 
-        @media print{
+        
+        /* ═══ PRINTABLE REPORT CARD ═══ */
+        @media print {
+            body { background: #fff !important; color: #000 !important; padding: 20px; font-family: sans-serif; }
+            .card { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100%; max-width: 100%; }
+            #result-card { display: block !important; }
+            .no-print, #watermark-container, #network-status { display: none !important; }
+            .q-review-box { break-inside: avoid; border: 1px solid #ddd !important; margin-bottom:10px; padding:10px; border-radius:6px; }
+            .result-stats { background: #f9f9f9 !important; border: 1px solid #ddd !important; display:flex; gap:20px; padding:15px; margin:20px 0; border-radius:10px; }
+            .stat-num { color: #000 !important; font-size:24px; font-weight:bold; }
+            .stat-label { font-size:12px; color:#555 !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .cert-code { font-family: monospace; font-size: 16px; border: 2px dashed #000; padding: 10px; margin-top: 20px; text-align: center; font-weight: bold; }
+        }
+
+/* Original Print */ @media hideprint {
             *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
             body{background:#fff!important;color:#000!important;padding:0!important;font-size:12px;}
             .no-print,#calc-btn,#calculator,.action-row,#entry-card,#exam-card,#violation-overlay,#countdown-overlay{display:none!important;}
@@ -379,9 +394,17 @@
         }
         @media(max-width:900px){.exam-layout{grid-template-columns:1fr;}.question-panel{position:static;}}
         @media(max-width:500px){.card{padding:18px;}.result-stats{gap:14px;}.action-row{flex-direction:column;}.action-row button{width:100%;}.mode-selector{grid-template-columns:1fr;}}
+
+        /* ═══ ENTERPRISE FEATURES ═══ */
+        #watermark-container{position:fixed;inset:0;pointer-events:none;z-index:9990;overflow:hidden;opacity:0.03;display:none;user-select:none;}
+        .watermark-text{position:absolute;font-size:26px;font-weight:900;color:#fff;white-space:nowrap;transform:rotate(-35deg);user-select:none;}
+        #tts-btn{background:rgba(59,130,246,0.1);color:var(--info);border:1px solid rgba(59,130,246,0.3);padding:8px 14px;font-size:12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:0.2s;width:auto;}
+        #tts-btn:hover{background:rgba(59,130,246,0.2);border-color:var(--info);}
+        #tts-btn.speaking{background:var(--info);color:#fff;animation:pulse-border 1.5s infinite;}
     </style>
 </head>
 <body>
+<div id="watermark-container"></div>
 <div id="network-status" class="online">● Online</div>
 
 <!-- COUNTDOWN OVERLAY -->
@@ -719,6 +742,7 @@
             <div id="options-box"></div>
             <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;align-items:center;">
                 <button id="flag-btn" onclick="toggleFlag()">🚩 Flag</button>
+                <button id="tts-btn" class="no-print hidden" onclick="toggleReadAloud()" title="Read question aloud">🔊 Read Aloud</button>
                 <button class="secondary-btn" onclick="prev()" style="flex:1;">← Back</button>
                 <button class="primary-btn" style="flex:2;" onclick="next()" id="next-btn">Next →</button>
             </div>
@@ -833,6 +857,56 @@ function decodeMeta(r){
 function showStatusMsg(m,t='error'){
     document.getElementById('status-message').innerHTML=`<div class="status-msg status-${t}">${m}</div>`;
 }
+
+// ════════ TEXT-TO-SPEECH (READ ALOUD) ════════
+let currentUtterance = null;
+function toggleReadAloud(){
+    if(!('speechSynthesis' in window)){
+        showToastStudent('Text-to-speech not supported in this browser.');
+        return;
+    }
+    const btn = document.getElementById('tts-btn');
+    if(window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        btn.classList.remove('speaking');
+        btn.innerHTML = '🔊 Read Aloud';
+        return;
+    }
+    const q = questions[current];
+    let textToRead = `Question ${current+1}. ${q.q}. `;
+    const qtype = getQType(q);
+    if(qtype==='mcq' || qtype==='mrq') {
+        if(q.a) textToRead += `Option A: ${q.a}. `;
+        if(q.b) textToRead += `Option B: ${q.b}. `;
+        if(q.c) textToRead += `Option C: ${q.c}. `;
+        if(q.d) textToRead += `Option D: ${q.d}. `;
+    } else if(qtype==='tf') {
+        textToRead += `True or False.`;
+    }
+    
+    currentUtterance = new SpeechSynthesisUtterance(textToRead);
+    currentUtterance.onend = () => {
+        btn.classList.remove('speaking');
+        btn.innerHTML = '🔊 Read Aloud';
+    };
+    window.speechSynthesis.speak(currentUtterance);
+    btn.classList.add('speaking');
+    btn.innerHTML = '⏹ Stop Reading';
+}
+
+function renderWatermark() {
+    const wc = document.getElementById('watermark-container');
+    wc.style.display = 'block';
+    const text = studentMode === 'registered' && finalStudentName ? `${finalStudentName} (${finalStudentId})` : 'HMG CBT PRO';
+    let htmlStr = '';
+    for(let i=0; i<30; i++) {
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+        htmlStr += `<div class="watermark-text" style="top:${top}vh; left:${left}vw;">${text}</div>`;
+    }
+    wc.innerHTML = htmlStr;
+}
+
 function showToastStudent(msg){
     let t=document.getElementById('s-toast');
     if(!t){t=document.createElement('div');t.id='s-toast';t.style.cssText='position:fixed;bottom:-60px;left:50%;transform:translateX(-50%);background:#18181b;color:#f4f4f5;border:1px solid #27272a;padding:10px 20px;border-radius:10px;font-weight:600;font-size:13px;transition:bottom 0.3s;z-index:9999;white-space:nowrap;';document.body.appendChild(t);}
@@ -941,7 +1015,7 @@ async function init(){
     }
     document.getElementById('code-entry-box')?.classList.add('hidden');
     try{
-        const res=await fetch(\`${SB_URL}/rest/v1/exams?code=eq.\${code}&select=*\`,{headers:{'apikey':SB_KEY,'Authorization':\`Bearer \${SB_KEY}\`}});
+        const res=await fetch(`${SB_URL}/rest/v1/exams?code=eq.${code}&select=*`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
         const data=await res.json();
         if(!data.length){showStatusMsg('Exam not found. Check your exam code or ask your teacher to resend the link/code. <button onclick="showCodeEntry()" style="width:auto;margin-left:8px;padding:6px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;">Try another code</button>');return;}
         exam=data[0];
@@ -967,13 +1041,13 @@ function init_admission(){
     const m=decodeMeta(exam.subject);
     document.getElementById('banner-subject').innerText=m.subject;
     const tags=[];
-    if(m.cls!=='—')tags.push(\`<span class="meta-tag tag-class">\${m.cls}</span>\`);
-    if(m.term!=='—')tags.push(\`<span class="meta-tag tag-term">\${m.term}</span>\`);
-    if(m.type!=='—')tags.push(\`<span class="meta-tag tag-type">\${m.type}</span>\`);
-    if(m.topic!=='—')tags.push(\`<span class="meta-tag tag-topic">📖 \${m.topic}</span>\`);
-    tags.push(\`<span class="meta-tag tag-misc">⏱ \${exam.duration} min</span>\`);
-    tags.push(\`<span class="meta-tag tag-misc">Pass: \${m.passmark}%</span>\`);
-    if(exam.attempt_limit!=999)tags.push(\`<span class="meta-tag tag-misc">Max \${exam.attempt_limit} attempt\${exam.attempt_limit>1?'s':''}</span>\`);
+    if(m.cls!=='—')tags.push(`<span class="meta-tag tag-class">${m.cls}</span>`);
+    if(m.term!=='—')tags.push(`<span class="meta-tag tag-term">${m.term}</span>`);
+    if(m.type!=='—')tags.push(`<span class="meta-tag tag-type">${m.type}</span>`);
+    if(m.topic!=='—')tags.push(`<span class="meta-tag tag-topic">📖 ${m.topic}</span>`);
+    tags.push(`<span class="meta-tag tag-misc">⏱ ${exam.duration} min</span>`);
+    tags.push(`<span class="meta-tag tag-misc">Pass: ${m.passmark}%</span>`);
+    if(exam.attempt_limit!=999)tags.push(`<span class="meta-tag tag-misc">Max ${exam.attempt_limit} attempt${exam.attempt_limit>1?'s':''}</span>`);
     document.getElementById('banner-tags').innerHTML=tags.join('');
     document.getElementById('exam-banner').classList.remove('hidden');
     document.title='HMG Academy CBT | '+m.subject;
@@ -1008,14 +1082,14 @@ function init_admission(){
 
     studentMode=exam.exam_mode||'open';
     renderEntryForm();
-    showStatusMsg(\`${questions.length} questions · \${exam.duration} minutes · Pass mark: \${m.passmark}%\`,'info');
+    showStatusMsg(`${questions.length} questions · ${exam.duration} minutes · Pass mark: ${m.passmark}%`,'info');
 }
 
 function startWaitRoom(){
     const m=decodeMeta(exam.subject);
     document.getElementById('wait-room-overlay').classList.remove('hidden');
-    document.getElementById('wait-room-subject').innerText=\`${m.subject} — Wait Room\`;
-    document.getElementById('wait-room-msg').innerText=\`The exam is scheduled to start at \${new Date(exam.start_at).toLocaleString()}. You will be admitted automatically.\`;
+    document.getElementById('wait-room-subject').innerText=`${m.subject} — Wait Room`;
+    document.getElementById('wait-room-msg').innerText=`The exam is scheduled to start at ${new Date(exam.start_at).toLocaleString()}. You will be admitted automatically.`;
     
     const timerEl=document.getElementById('wait-room-timer');
     const interval=setInterval(()=>{
@@ -1028,12 +1102,9 @@ function startWaitRoom(){
             init_admission();
         }else{
             const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
-            timerEl.innerText=\`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}\`;
+            timerEl.innerText=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }
     },1000);
-}
-
-    }
 }
 
 // ═══════════════════════════════════════════
@@ -1233,7 +1304,7 @@ function _beginExam(){
     startDraftSave();
     startProctoring();     // ← live camera + periodic snapshots + multi-face detection
     startDevToolsTrap();   // ← devtools size-change detection
-    renderQNav();showQ();
+    renderWatermark();renderQNav();showQ();
 }
 
 // ═══════════════════════════════════════════
@@ -1362,6 +1433,12 @@ function mrqSetSelected(origKey,set){ const sorted=[...set].sort().join(','); an
 function hasAnswer(origKey){ const v=answers[origKey]; return v!=null&&v!==''&&v!==undefined; }
 
 function showQ(prevIndex){
+    if(window.speechSynthesis && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        const b=document.getElementById('tts-btn');
+        if(b){b.classList.remove('speaking');b.innerHTML='🔊 Read Aloud';}
+    }
+
     if(prevIndex!==undefined&&examActive){
         const elapsed=Math.round((Date.now()-questionStartTime)/1000);
         const prevOrig=questions[prevIndex]._orig;
@@ -1372,7 +1449,12 @@ function showQ(prevIndex){
     const origKey=q._orig;
     const qtype=getQType(q);
 
-    document.getElementById('q-text').innerText=`${current+1}. ${q.q}`;
+    let qLabel = `${current+1}. ${q.q}`;
+     let metaHtml = '';
+     if(q.section) metaHtml += `<div style="font-size:12px;font-weight:800;color:var(--info);text-transform:uppercase;margin-bottom:8px;letter-spacing:1px;">${escapeHtmlStudent(q.section)}</div>`;
+     if(q.difficulty) metaHtml += `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.1);margin-bottom:8px;display:inline-block;">${q.difficulty}</span>`;
+     
+     document.getElementById('q-text').innerHTML = metaHtml + '<br>' + escapeHtmlStudent(qLabel);
     document.getElementById('progress-text').innerText=`Question ${current+1} of ${questions.length}`;
     const fb=document.getElementById('flag-btn');
     if(fb){if(flagged.has(current)){fb.classList.add('flagged');fb.innerText='🚩 Flagged';}else{fb.classList.remove('flagged');fb.innerText='🚩 Flag';}}
@@ -2294,7 +2376,7 @@ async function submitExam(){
     // so the teacher can evaluate correctness without needing the session pool.
     // For ORDERING we save ordered_texts: [{pos,text,correct_text,is_correct}]
     // so the teacher can show a side-by-side position comparison.
-    const answersData={};
+    const answersData={ time_analytics: questionTimes };
     questions.forEach((q)=>{
         const origKey=String(q._orig);
         const qtype=getQType(q);
@@ -2378,6 +2460,7 @@ async function submitExam(){
         return true;
     }
 
+    const certCode = Math.random().toString(36).substring(2,10).toUpperCase();
     const fullBody = {
         exam_id:        exam.id,
         student_name:   finalStudentName,
@@ -2403,6 +2486,7 @@ async function submitExam(){
 
     // Minimal body — only the columns guaranteed present from the base table
     const minimalBody = {
+        cert_code:      certCode,
         exam_id:      exam.id,
         student_name: finalStudentName,
         student_class:finalStudentClass,

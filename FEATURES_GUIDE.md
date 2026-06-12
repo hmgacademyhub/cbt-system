@@ -218,3 +218,28 @@
 
 HMG Academy CBT Pro v2.0 — Learning Deliberately. Teaching Authentically.
 © 2026 HMG Concepts
+
+### Accessibility & Anti-Cheat Enterprise Additions (New Enhancements)
+- **Text-To-Speech (Read Aloud)**: Native, browser-based TTS for visually impaired students or auditory learners. Reads the question and options aloud. Stops reading automatically upon moving to the next question.
+- **Dynamic Screen Watermark**: A high-density, low-opacity diagonal watermark covering the entire testing screen displaying the student's identifier or "HMG CBT PRO". This actively deters users from photographing the screen using external devices (anti-leak security).
+
+
+## V2.0 Enterprise Enhancements (Latest Additions)
+- **Question Difficulty Levels**: Assign "Easy", "Medium", or "Hard" difficulty tags during question creation, visible to students for better pacing.
+- **Negative Marking**: Deduct configurable fractional points for incorrect answers (standardized for JAMB/WAEC high-stakes modes).
+- **Exam Scheduling (Start Windows)**: Schedule specific start times; students wait in a live "Wait Room" until the exact second the exam begins.
+- **Sectioned Exams**: Group questions by subject or section (e.g. "Section A: Objective", "Section B: Theory") within a single assessment.
+- **Exam Templates**: Save common configurations (duration, passing marks, negative scores) directly to the browser for instant loading later.
+- **Student Progress Tracking**: Click on any student's name to view their historical scores across all past exams.
+- **Certificates with Verification Codes**: Generates a unique secure hash/code for every submitted result to verify printout authenticity.
+- **Result Release Control**: Teachers can select "Hold Results", hiding the score from students until they are manually released.
+- **Printable Report Cards**: Rebuilt print layout to look like official certification score reports.
+- **Exam Code Regeneration**: Instantly roll a new 6-character access code for an existing exam to lock out old participants.
+- **Per-Question Time Analytics**: Student's time spent on each individual question is logged, allowing the teacher to see which questions take the longest.
+- **Exam Archive (Soft Delete)**: "Archive" exams instead of permanently deleting them, removing them from the main dashboard while preserving data.
+- **Student Weakness Identification**: Auto-calculates which topics a student failed most frequently and highlights them as "Identified Weaknesses".
+- **Leaderboard with Percentiles**: Shows a student's ranking (e.g., "Top 15%") compared to the rest of the class.
+- **Enhanced Anti-Cheating**: Dynamic watermark screens, forced fullscreen enforcement, and DevTools/Inspect Element size traps.
+- **Customizable Exam Instructions**: Dedicated input box to display specific rules (e.g., "No calculators") on the student's admission screen.
+- **Batch Exam Actions**: Use checkboxes to select multiple exams and Open, Lock, or Archive them simultaneously.
+- **Question Reusability**: Easily "Import Questions" from past active/archived exams into a new exam.

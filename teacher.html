@@ -782,7 +782,33 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">If set, the exam closes automatically at this date and time. Leave blank to close manually.</div>
           </div>
         </div>
-        <div style="margin-bottom:20px;">
+        
+<div style="margin-bottom:20px;">
+  <label>Advanced Enterprise Settings</label>
+  <div class="grid-2">
+    <div>
+      <label>Negative Marking (Deduct per wrong answer)</label>
+      <input type="number" step="0.1" min="0" id="ex-negative" placeholder="e.g. 0.25 (Leave empty for 0)">
+    </div>
+    <div>
+      <label>Result Release Control</label>
+      <select id="ex-release">
+        <option value="true">Release immediately to students</option>
+        <option value="false">Hold results (Pending manual release)</option>
+      </select>
+    </div>
+  </div>
+  <div>
+    <label>Custom Exam Instructions</label>
+    <textarea id="ex-instructions" rows="3" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;" placeholder="e.g. Do not use calculators. Section A is compulsory..."></textarea>
+  </div>
+</div>
+<div class="flex-gap" style="margin-bottom:20px;">
+  <button type="button" class="btn-sm btn-outline" onclick="saveExamTemplate()">💾 Save as Template</button>
+  <button type="button" class="btn-sm btn-ghost" onclick="loadExamTemplate()">📂 Load Template</button>
+</div>
+
+<div style="margin-bottom:20px;">
           <label>Open Exam Immediately?</label>
           <select id="ex-open-now">
             <option value="false">No — Keep locked until I open it manually</option>
@@ -1214,7 +1240,21 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           <button class="btn-sm btn-outline" id="sort-btn-class" onclick="setExamSort('class')" style="padding:5px 11px;font-size:11px;">Class</button>
         </div>
 
-        <div id="exam-list"><div class="empty"><div class="empty-icon">📋</div>No assessments yet. Create one from the sidebar.</div></div>
+        
+<div class="flex-gap" style="margin-bottom:14px; padding:10px; background:var(--surface-2); border-radius:10px; border:1px solid var(--border);">
+    <input type="checkbox" id="selectAllExams" onclick="toggleAllExams(this)" style="width:auto; margin:0;">
+    <label for="selectAllExams" style="margin:0; font-size:12px; cursor:pointer; color:var(--text);">Select All</label>
+    <span style="font-size:12px; font-weight:700; margin-left:10px;">Batch Actions:</span>
+    <select id="batchActionSelect" style="width:auto; margin:0; padding:6px; font-size:12px; border-radius:6px; background:var(--bg); color:var(--text); border:1px solid var(--border);">
+        <option value="">-- Select Action --</option>
+        <option value="open">Open Selected</option>
+        <option value="lock">Lock Selected</option>
+        <option value="archive">Archive Selected (Soft Delete)</option>
+        <option value="delete">Permanently Delete Selected</option>
+    </select>
+    <button class="btn-sm btn-primary" onclick="executeBatchAction()" style="width:auto; padding:6px 12px; border-radius:6px;">Apply</button>
+</div>
+<div id="exam-list"><div class="empty"><div class="empty-icon">📋</div>No assessments yet. Create one from the sidebar.</div></div>
       </div>
     </div><!-- /assessments -->
 
@@ -3202,6 +3242,35 @@ function removeManualQuestion(id){
   compileManualQuestions();
 }
 
+
+function populateReuseSelect() {
+    const sel = document.getElementById('reuse-exam-select');
+    if(!sel) return;
+    sel.innerHTML = '<option value="">-- Select an Exam --</option>' + 
+        allExams.filter(e => !e.is_archived).map(e => `<option value="${e.id}">${decodeMeta(e.subject).subject} (${e.code})</option>`).join('');
+}
+function importQuestionsFromExam() {
+    const id = document.getElementById('reuse-exam-select').value;
+    if(!id) return showToast('Please select an exam first.');
+    const exam = allExams.find(e => e.id === id);
+    if(!exam || !exam.csv_data) return showToast('No questions found in this exam.');
+    try {
+        const qList = JSON.parse(exam.csv_data);
+        if(!Array.isArray(qList)) return showToast('Invalid question data format.');
+        questionsPool = questionsPool.concat(qList);
+        renderQuestionsPreview();
+        showToast(`✅ Imported ${qList.length} questions successfully.`);
+    } catch(e) {
+        showToast('Error importing questions.');
+    }
+}
+// Hook populateReuseSelect into navigation/loadPlatformData
+const _origNav = navigate;
+window.navigate = function(page) {
+    _origNav(page);
+    if(page === 'create') populateReuseSelect();
+};
+
 function compileManualQuestions(){
   const ids=[...document.querySelectorAll('.manual-q')].map(el=>el.id.replace('mq-',''));
   questionsPool=[];
@@ -3675,6 +3744,9 @@ async function createExam(){
     exam_mode:     examMode,
     is_open:       openNow,
     start_at:      startAtVal ? new Date(startAtVal).toISOString() : null,
+    negative_mark: document.getElementById('ex-negative').value || 0,
+    instructions:  document.getElementById('ex-instructions').value || '',
+    release_results: document.getElementById('ex-release').value === 'true',
     close_at:      closeAtVal ? new Date(closeAtVal).toISOString() : null
   };
   try{
@@ -3804,9 +3876,12 @@ function renderExamList(){
         const link=`${baseUrl}?code=${e.code}`;
         html+=`<div class="exam-row">
           <div class="flex-between">
-            <div style="min-width:0;">
+            <div style="min-width:0; display:flex; align-items:center; gap:10px;">
+              <input type="checkbox" class="exam-checkbox" value="${e.id}" style="width:auto; margin:0;">
+              <div>
               <span style="font-size:15px;font-weight:700;">${m.subject}</span>
               <span class="badge ${e.is_open?'badge-open':'badge-closed'}" style="margin-left:8px;">${e.is_open?'🟢 Live':'🔴 Locked'}</span>
+              </div>
             </div>
             <div class="flex-gap no-print" style="flex-shrink:0;">
               <button class="btn-sm btn-blue" onclick="previewExam('${e.id}')">👁 Preview</button>
@@ -3815,6 +3890,7 @@ function renderExamList(){
               <button class="btn-sm btn-teal" onclick="openDuplicateModal('${e.id}')">📋 Duplicate</button>
               <button class="btn-sm btn-outline" onclick="toggleStatus('${e.id}',${e.is_open})">${e.is_open?'🔴 Lock':'🟢 Open'}</button>
               <button class="btn-sm btn-warning" onclick="editSchedule('${e.id}')" title="Set auto-close time">⏰ Schedule</button>
+              <button class="btn-sm btn-outline" onclick="regenExamCode('${e.id}')" title="Regenerate Access Code">🔄 Regen</button>
               <button class="btn-sm btn-ghost" onclick="copyExamCode('${e.code}')" title="Copy 6-character access code">🔢 Code</button>
               <button class="btn-sm btn-ghost" onclick="copyExamLink('${e.code}')" title="Copy student link">🔗 Link</button>
               <button class="btn-sm btn-purple" onclick="copyStudentInstructions('${e.code}')" title="Copy full student instructions">📋 Instructions</button>
@@ -4301,7 +4377,8 @@ function updateDashboard(){
           <div style="font-size:13px;font-weight:700;">${m.subject}</div>
           <div style="font-size:11px;color:var(--text-muted);">${m.cls} · ${m.term} · ⏱ ${e.duration}min</div>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;"><button class="btn-sm btn-ghost" onclick="copyExamCode('${e.code}')" style="padding:5px 10px;font-size:11px;">🔢 ${e.code}</button><button class="btn-sm btn-ghost" onclick="copyExamLink('${e.code}')" style="padding:5px 10px;font-size:11px;">🔗 Link</button></div>
+        <div style="display:flex;gap:6px;flex-shrink:0;"><button class="btn-sm btn-outline" onclick="regenExamCode('${e.id}')" title="Regenerate Access Code">🔄 Regen</button>
+              <button class="btn-sm btn-ghost" onclick="copyExamCode('${e.code}')" style="padding:5px 10px;font-size:11px;">🔢 ${e.code}</button><button class="btn-sm btn-ghost" onclick="copyExamLink('${e.code}')" style="padding:5px 10px;font-size:11px;">🔗 Link</button></div>
       </div>`;
     }).join('');
   }
