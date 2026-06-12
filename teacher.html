@@ -772,17 +772,22 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
 
         <div class="grid-2" style="margin-top:-4px;margin-bottom:0;">
           <div>
+            <label>Start Date &amp; Time <span style="font-weight:400;text-transform:none;color:var(--text-muted);">(optional)</span></label>
+            <input type="datetime-local" id="ex-start-at" style="margin-bottom:4px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">If set, students will be in a "Wait Room" until this time. Leave blank to start immediately.</div>
+          </div>
+          <div>
             <label>Auto-Close Date &amp; Time <span style="font-weight:400;text-transform:none;color:var(--text-muted);">(optional)</span></label>
             <input type="datetime-local" id="ex-close-at" style="margin-bottom:4px;">
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px;">If set, the exam closes automatically at this date and time. Leave blank to close manually.</div>
           </div>
-          <div>
-            <label>Open Exam Immediately?</label>
-            <select id="ex-open-now">
-              <option value="false">No — Keep locked until I open it manually</option>
-              <option value="true">Yes — Open as soon as I publish</option>
-            </select>
-          </div>
+        </div>
+        <div style="margin-bottom:20px;">
+          <label>Open Exam Immediately?</label>
+          <select id="ex-open-now">
+            <option value="false">No — Keep locked until I open it manually</option>
+            <option value="true">Yes — Open as soon as I publish</option>
+          </select>
         </div>
 
         <hr class="divider">
@@ -3656,8 +3661,9 @@ async function createExam(){
   if(!type)return showToast('⚠️ Select an exam type.');
   if(!dur||dur<1)return showToast('⚠️ Enter a valid duration.');
   const examMode   = document.getElementById('ex-mode')?.value||'open';
-  const closeAtVal = document.getElementById('ex-close-at')?.value||'';
-  const openNow    = document.getElementById('ex-open-now')?.value==='true';
+  const startAtVal   = document.getElementById('ex-start-at')?.value||'';
+  const closeAtVal   = document.getElementById('ex-close-at')?.value||'';
+  const openNow      = document.getElementById('ex-open-now')?.value==='true';
   const payload = {
     subject:       encodeMeta(sub,cls,term,topic,type,sess,pm),
     duration:      dur,
@@ -3668,12 +3674,13 @@ async function createExam(){
     teacher_id:    session.user.id,
     exam_mode:     examMode,
     is_open:       openNow,
+    start_at:      startAtVal ? new Date(startAtVal).toISOString() : null,
     close_at:      closeAtVal ? new Date(closeAtVal).toISOString() : null
   };
   try{
     await sbFetch('/rest/v1/exams','POST',payload);
     showToast('✅ Assessment published! Code: '+payload.code+' — link and code are available in Assessments.');
-    ['ex-sub','ex-class','ex-topic','ex-session','ex-dur','ex-count'].forEach(id=>document.getElementById(id).value='');
+    ['ex-sub','ex-class','ex-topic','ex-session','ex-dur','ex-count','ex-start-at'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('ex-term').value='';document.getElementById('ex-type').value='';
     document.getElementById('ex-passmark').value='50';document.getElementById('ex-limit').value='1';
     const _cm=document.getElementById('ex-mode');if(_cm)_cm.value='open';

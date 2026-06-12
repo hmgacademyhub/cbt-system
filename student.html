@@ -108,6 +108,13 @@
         .countdown-num{font-size:100px;font-weight:900;color:var(--primary);line-height:1;animation:cpulse 1s ease-in-out infinite;}
         @keyframes cpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:0.7}}
 
+        /* ═══ WAIT ROOM OVERLAY ═══ */
+        #wait-room-overlay{position:fixed;inset:0;background:var(--bg);z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;backdrop-filter:blur(10px);}
+        .wait-room-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:40px;max-width:500px;box-shadow:0 20px 50px rgba(0,0,0,0.5);}
+        .wait-room-timer{font-size:64px;font-weight:900;color:var(--primary);margin:20px 0;font-variant-numeric:tabular-nums;line-height:1;}
+        .wait-room-title{font-size:22px;font-weight:800;margin-bottom:10px;}
+        .wait-room-msg{font-size:15px;color:var(--text-muted);line-height:1.6;margin-bottom:20px;}
+
         /* Integrity */
         .integrity-bar{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);}
         .violation-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--danger);margin-top:6px;}
@@ -384,6 +391,17 @@
     <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:20px;" id="countdown-subject"></div>
     <div style="font-size:13px;color:var(--text-muted);margin-top:8px;" id="countdown-detail"></div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:24px;max-width:360px;line-height:1.6;">Your timer starts when the exam loads. Stay focused and do your best.</div>
+</div>
+
+<!-- WAIT ROOM OVERLAY -->
+<div id="wait-room-overlay" class="hidden">
+    <div class="wait-room-card">
+        <div style="font-size:48px;margin-bottom:16px;">⏳</div>
+        <div class="wait-room-title" id="wait-room-subject">Exam Coming Soon</div>
+        <div class="wait-room-msg" id="wait-room-msg">The exam has not started yet. Please wait in the room. You will be admitted automatically.</div>
+        <div class="wait-room-timer" id="wait-room-timer">00:00:00</div>
+        <div style="font-size:13px;color:var(--text-muted);">Ensure your device is connected to the internet and stay on this page.</div>
+    </div>
 </div>
 
 <!-- VIOLATION OVERLAY -->
@@ -923,73 +941,98 @@ async function init(){
     }
     document.getElementById('code-entry-box')?.classList.add('hidden');
     try{
-        const res=await fetch(`${SB_URL}/rest/v1/exams?code=eq.${code}&select=*`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+        const res=await fetch(\`${SB_URL}/rest/v1/exams?code=eq.\${code}&select=*\`,{headers:{'apikey':SB_KEY,'Authorization':\`Bearer \${SB_KEY}\`}});
         const data=await res.json();
         if(!data.length){showStatusMsg('Exam not found. Check your exam code or ask your teacher to resend the link/code. <button onclick="showCodeEntry()" style="width:auto;margin-left:8px;padding:6px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;">Try another code</button>');return;}
         exam=data[0];
         if(!exam.is_open){showStatusMsg('This exam is currently closed. Contact your teacher.');return;}
-        // ENHANCEMENT: enforce scheduled close time on the student side too.
-        // This protects exams even if the teacher dashboard is not open to run auto-close polling.
         if(exam.close_at && new Date(exam.close_at).getTime() <= Date.now()){
-            showStatusMsg('This exam has reached its scheduled closing time. Contact your teacher if you believe this is an error.');
+            showStatusMsg('This exam has reached its scheduled closing time.HMT Academy CBT - a product of HMG Concepts. Contact your teacher if you believe this is an error.');
+            return;
+        }
+        if(exam.start_at && new Date(exam.start_at).getTime() > Date.now()){
+            startWaitRoom();
             return;
         }
 
-        const m=decodeMeta(exam.subject);
-        document.getElementById('banner-subject').innerText=m.subject;
-        const tags=[];
-        if(m.cls!=='—')tags.push(`<span class="meta-tag tag-class">${m.cls}</span>`);
-        if(m.term!=='—')tags.push(`<span class="meta-tag tag-term">${m.term}</span>`);
-        if(m.type!=='—')tags.push(`<span class="meta-tag tag-type">${m.type}</span>`);
-        if(m.topic!=='—')tags.push(`<span class="meta-tag tag-topic">📖 ${m.topic}</span>`);
-        tags.push(`<span class="meta-tag tag-misc">⏱ ${exam.duration} min</span>`);
-        tags.push(`<span class="meta-tag tag-misc">Pass: ${m.passmark}%</span>`);
-        if(exam.attempt_limit!=999)tags.push(`<span class="meta-tag tag-misc">Max ${exam.attempt_limit} attempt${exam.attempt_limit>1?'s':''}</span>`);
-        document.getElementById('banner-tags').innerHTML=tags.join('');
-        document.getElementById('exam-banner').classList.remove('hidden');
-        document.title='HMG Academy CBT | '+m.subject;
-
-        // CRITICAL FIX: tag each question with its ORIGINAL csv index BEFORE shuffling.
-        // answers_data is keyed by orig_idx so teacher view always matches correctly.
-        let rawQuestions;
-        try{ rawQuestions = JSON.parse(exam.csv_data); }
-        catch(parseErr){
-            console.error('[CBT] csv_data parse failed:',parseErr);
-            showStatusMsg('This exam could not be loaded because its question data is corrupted. Please ask your teacher to re-publish the exam.');
-            return;
-        }
-        if(!Array.isArray(rawQuestions)||rawQuestions.length===0){
-            showStatusMsg('This exam has no questions yet. Please contact your teacher.');
-            return;
-        }
-        rawQuestions.forEach((q, i) => {
-            q._orig = i;
-            // Default type to mcq for backward compat
-            if(!q.type)q.type='mcq';
-            const qt=q.type.toLowerCase();
-            // Only normalise ans to A/B/C/D for MCQ and TF — other types store free text / comma lists
-            if(qt==='mcq'||qt==='tf'){
-                q.ans = (q.ans||'').replace(/^\uFEFF/,'').replace(/^["'\s]+|["'\s]+$/g,'').toUpperCase();
-                if(!['A','B','C','D'].includes(q.ans)) q.ans='';
-            }
-        });
-
-        if(exam.select_count && exam.select_count < rawQuestions.length){
-            questions = rawQuestions.sort(() => Math.random() - 0.5).slice(0, exam.select_count);
-        } else {
-            questions = rawQuestions.sort(() => Math.random() - 0.5);
-        }
-        if(Number(exam.select_count)>0)questions=questions.slice(0,Number(exam.select_count));
-
-        // Determine exam mode from exam record
-        // exam_mode field: 'open' (default) or 'registered'
-        studentMode=exam.exam_mode||'open';
-        renderEntryForm();
-        showStatusMsg(`${questions.length} questions · ${exam.duration} minutes · Pass mark: ${m.passmark}%`,'info');
+        init_admission();
     }catch(e){
         console.error('[CBT] init error:',e);
         const retryBtn='<button onclick=\"init()\" style=\"width:auto;margin-left:8px;padding:6px 12px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;\">🔄 Retry</button>';
         showStatusMsg('Connection error. Check your internet and try again. '+retryBtn);
+    }
+}
+
+function init_admission(){
+    const m=decodeMeta(exam.subject);
+    document.getElementById('banner-subject').innerText=m.subject;
+    const tags=[];
+    if(m.cls!=='—')tags.push(\`<span class="meta-tag tag-class">\${m.cls}</span>\`);
+    if(m.term!=='—')tags.push(\`<span class="meta-tag tag-term">\${m.term}</span>\`);
+    if(m.type!=='—')tags.push(\`<span class="meta-tag tag-type">\${m.type}</span>\`);
+    if(m.topic!=='—')tags.push(\`<span class="meta-tag tag-topic">📖 \${m.topic}</span>\`);
+    tags.push(\`<span class="meta-tag tag-misc">⏱ \${exam.duration} min</span>\`);
+    tags.push(\`<span class="meta-tag tag-misc">Pass: \${m.passmark}%</span>\`);
+    if(exam.attempt_limit!=999)tags.push(\`<span class="meta-tag tag-misc">Max \${exam.attempt_limit} attempt\${exam.attempt_limit>1?'s':''}</span>\`);
+    document.getElementById('banner-tags').innerHTML=tags.join('');
+    document.getElementById('exam-banner').classList.remove('hidden');
+    document.title='HMG Academy CBT | '+m.subject;
+
+    let rawQuestions;
+    try{ rawQuestions = JSON.parse(exam.csv_data); }
+    catch(parseErr){
+        console.error('[CBT] csv_data parse failed:',parseErr);
+        showStatusMsg('This exam could not be loaded because its question data is corrupted. Please ask your teacher to re-publish the exam.');
+        return;
+    }
+    if(!Array.isArray(rawQuestions)||rawQuestions.length===0){
+        showStatusMsg('This exam has no questions yet. Please contact your teacher.');
+        return;
+    }
+    rawQuestions.forEach((q, i) => {
+        q._orig = i;
+        if(!q.type)q.type='mcq';
+        const qt=q.type.toLowerCase();
+        if(qt==='mcq'||qt==='tf'){
+            q.ans = (q.ans||'').replace(/^\uFEFF/,'').replace(/^["'\s]+|["'\s]+$/g,'').toUpperCase();
+            if(!['A','B','C','D'].includes(q.ans)) q.ans='';
+        }
+    });
+
+    if(exam.select_count && exam.select_count < rawQuestions.length){
+        questions = rawQuestions.sort(() => Math.random() - 0.5).slice(0, exam.select_count);
+    } else {
+        questions = rawQuestions.sort(() => Math.random() - 0.5);
+    }
+    if(Number(exam.select_count)>0)questions=questions.slice(0,Number(exam.select_count));
+
+    studentMode=exam.exam_mode||'open';
+    renderEntryForm();
+    showStatusMsg(\`${questions.length} questions · \${exam.duration} minutes · Pass mark: \${m.passmark}%\`,'info');
+}
+
+function startWaitRoom(){
+    const m=decodeMeta(exam.subject);
+    document.getElementById('wait-room-overlay').classList.remove('hidden');
+    document.getElementById('wait-room-subject').innerText=\`${m.subject} — Wait Room\`;
+    document.getElementById('wait-room-msg').innerText=\`The exam is scheduled to start at \${new Date(exam.start_at).toLocaleString()}. You will be admitted automatically.\`;
+    
+    const timerEl=document.getElementById('wait-room-timer');
+    const interval=setInterval(()=>{
+        const now=Date.now();
+        const start=new Date(exam.start_at).getTime();
+        const diff=start-now;
+        if(diff<=0){
+            clearInterval(interval);
+            document.getElementById('wait-room-overlay').classList.add('hidden');
+            init_admission();
+        }else{
+            const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+            timerEl.innerText=\`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}\`;
+        }
+    },1000);
+}
+
     }
 }
 

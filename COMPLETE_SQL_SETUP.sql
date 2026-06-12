@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS exams (
   select_count INTEGER NOT NULL DEFAULT 0,
   is_open BOOLEAN NOT NULL DEFAULT false,
   exam_mode TEXT NOT NULL DEFAULT 'open',
+  start_at TIMESTAMPTZ,
   close_at TIMESTAMPTZ,
   csv_data TEXT NOT NULL DEFAULT '[]',
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -51,6 +52,15 @@ CREATE TABLE IF NOT EXISTS students (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS platform_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  admin_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  target_id UUID,
+  details JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ════════════════════════════════════════════
 -- STEP 2: ADD MISSING COLUMNS (safe for upgrades)
 -- ════════════════════════════════════════════
@@ -59,6 +69,9 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='exams' AND column_name='exam_mode') THEN
     ALTER TABLE exams ADD COLUMN exam_mode TEXT NOT NULL DEFAULT 'open';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='exams' AND column_name='start_at') THEN
+    ALTER TABLE exams ADD COLUMN start_at TIMESTAMPTZ;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='exams' AND column_name='close_at') THEN
     ALTER TABLE exams ADD COLUMN close_at TIMESTAMPTZ;
