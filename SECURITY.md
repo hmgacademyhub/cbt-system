@@ -1,147 +1,170 @@
-# Security Policy — HMG Academy CBT Pro
+# 🔒 HMG Academy CBT Pro v3.0 — Security Policy
 
-## Supported Version
-
-Only the current `main` branch / current deployment is actively maintained.
-
----
-
-## Reporting a Vulnerability
-
-Do **not** open a public GitHub issue for security problems.
-
-Email:
-
-```text
-buildingmyictcareer@gmail.com
-Subject: CBT Pro Security Report
-```
-
-Include:
-
-- affected file
-- steps to reproduce
-- impact
-- screenshots/video where useful
-- suggested fix if available
-
-Expected response: acknowledgement within 72 hours, practical follow-up as soon as possible.
+> **Security best practices and data protection guidelines.**  
+> Built by **HMG Concepts** — *Learning Deliberately. Teaching Authentically.*
 
 ---
 
-## Security Model
-
-### Supabase anon key
-
-The Supabase anon key is visible in frontend HTML files by design. It is safe only because Supabase Row Level Security controls what that key can do.
-
-The `service_role` key must **never** appear in any frontend file.
-
-### Row Level Security
-
-RLS must protect:
-
-- `exams`
-- `results`
-- `students`
-- `profiles`
-
-Teachers should only access their own exams, students, and results. Students should only read exams by code and insert result rows.
-
-### Teacher authentication
-
-Teacher accounts use Supabase Auth. The dashboard checks profile status before giving access.
-
-Possible statuses:
-
-- `pending`
-- `active`
-- `inactive`
-
-### Admin access
-
-Admin control should rely on `profiles.is_admin === true`, not a loose client-side role string. Admin RPC functions must be protected server-side.
-
-### Result integrity
-
-The student browser writes:
-
-- `score`
-- `total`
-- `correct_count`
-- `wrong_count`
-- `skipped_count`
-- `answers_data`
-
-The teacher dashboard reads these stored values. It should not replace them with re-scored values from an edited question bank.
-
-### Question content and XSS
-
-Question text, options, explanations, and JSON-based items must be escaped before rendering into HTML. Any contribution that inserts raw untrusted content into `innerHTML` must be reviewed carefully.
+## 📋 Table of Contents
+1. [Security Architecture](#security-architecture)
+2. [Data Protection](#data-protection)
+3. [Access Control](#access-control)
+4. [Exam Integrity](#exam-integrity)
+5. [Infrastructure Security](#infrastructure-security)
+6. [Incident Response](#incident-response)
+7. [Compliance](#compliance)
+8. [Contact](#contact)
 
 ---
 
-## Anti-Cheat and Proctoring Limits
+## 🏗️ Security Architecture
 
-The platform includes client-side integrity checks:
+### Defense in Depth
+1. **Database Layer (RLS)** — PostgreSQL Row-Level Security ensures each teacher only accesses their own data
+2. **Application Layer** — Authentication checks on every API call
+3. **Transport Layer** — HTTPS encryption for all communications
+4. **Client Layer** — No sensitive keys exposed in frontend code
 
-- tab switch detection
-- fullscreen exit detection
-- right-click/copy/paste blocking
-- devtools warning
-- optional webcam snapshots
-- optional face checks
-- optional audio spike detection
-
-These are deterrents, not perfect security. Physical supervision and school policy remain important.
-
----
-
-## Emergency Backup JSON
-
-If Supabase saving fails, students can download a result backup JSON. This file may contain sensitive data such as answers, scores, violation logs, and proctoring data. Teachers must store it responsibly.
+### Security-First Design
+- **RLS-First Architecture** — Data isolation enforced at the database level
+- **Zero Service Role Exposure** — The `service_role` key is never in frontend files
+- **Anon-Only Access** — Only the `anon` public key is used in the browser
+- **Least Privilege** — Each role has only the permissions it needs
 
 ---
 
-## Known Accepted Risks
+## 🛡️ Data Protection
 
-| Risk | Mitigation |
-|---|---|
-| Open-mode students can use another name | Use registered-student mode for strict exams |
-| Camera/microphone can be denied | Proctoring degrades gracefully; use physical supervision where needed |
-| Client-side anti-cheat can be bypassed | Use it as evidence, not as the only control |
-| Offline submission may fail | Emergency backup JSON exists |
-| Essay scoring is keyword-based | Teacher review recommended; no paid AI API used |
+### Student Data
+| Data Type | Storage | Protection |
+|-----------|---------|------------|
+| Name | Supabase (results table) | RLS-protected |
+| Class | Supabase (results table) | RLS-protected |
+| Student ID | Supabase (results table) | RLS-protected |
+| Exam Answers | Supabase (results.answers_data) | RLS-protected |
+| Proctor Photos | Supabase (results.proctor_data) | RLS-protected, base64 |
+| Violation Logs | Supabase (results.violation_log) | RLS-protected |
 
----
+### Data Retention
+- Results stored indefinitely within Supabase free tier limits
+- Archived exams preserved but hidden from main list
+- Deleted exams and results permanently removed (CASCADE)
+- Export backups stored locally on teacher's device
 
-## In Scope
-
-- RLS bypass
-- teacher data leakage
-- admin privilege escalation
-- XSS from question content
-- unauthorized result modification
-- leaked `service_role` key
-- ability to read another teacher’s roster/results
-
-## Out of Scope
-
-- a student using a second device
-- a student denying camera permission
-- open-mode impersonation by using another name
-- weak school passwords chosen by users
-- physical exam-room cheating outside browser visibility
+### Data Portability
+Teachers can export data at any time:
+- Exam Package Export (JSON)
+- Results CSV Export
+- Platform CSV Export (admin only)
+- Emergency Backup (student JSON)
 
 ---
 
-## Security Checklist Before Deployment
+## 🔐 Access Control
 
-1. Confirm `service_role` key is not in any file.
-2. Run all Supabase RLS SQL steps.
-3. Run Teacher Dashboard → Settings → Diagnostic.
-4. Test a teacher cannot query another teacher’s data.
-5. Test anonymous users cannot read `results` directly.
-6. Configure Supabase Auth redirect URLs.
-7. Use HTTPS hosting only.
-8. Keep backups of exported exam packages secure.
+### Role-Based Access
+| Role | Permissions |
+|------|-------------|
+| **Student** | Submit results, view own results, take exams |
+| **Teacher** | Create/manage exams, view own results, manage own students |
+| **Admin** | All teacher permissions + manage all teachers, platform-wide access |
+
+### Teacher Approval Workflow
+1. Teacher creates account → status set to `pending` by trigger
+2. Teacher sees "Awaiting Approval" screen
+3. Admin reviews and approves from admin panel
+4. Teacher status changes to `active` → gains dashboard access
+
+### Session Security
+- **Admin sessions** expire after 1 hour (with refresh token support)
+- **Teacher sessions** managed by Supabase Auth with automatic refresh
+- **Student sessions** are single-use (one exam, one submission)
+
+### ⚠️ Never Expose the Service Role Key
+The `service_role` key has **unrestricted database access** and should **never** appear in frontend files.
+
+---
+
+## 🛡️ Exam Integrity
+
+### Anti-Cheat Measures
+| Measure | Description |
+|---------|-------------|
+| Tab-Switch Detection | Warns and logs tab/window switches |
+| Fullscreen Enforcement | Detects exit from fullscreen mode |
+| DevTools Detection | Flags developer tools opening |
+| Right-Click Disabled | Prevents copy/paste of content |
+| Screen Watermark | Dynamic anti-screenshot overlay |
+| One-Submission Lock | Prevents duplicate attempts |
+| Proctor Photo Capture | 3 intake photos + periodic snapshots |
+| Multiple People Detection | Basic face detection warning |
+| Audio Monitoring | Detects unusual audio levels |
+| Violation Logging | All events recorded with timestamps |
+
+### Result Verification
+- **Verification Codes** — Unique hash per result certificate
+- **Stored Score Counts** — Ground truth saved at submission
+- **Proctor Evidence** — Photos and violation logs attached
+- **Emergency Backup** — JSON download if server save fails
+
+---
+
+## 🌐 Infrastructure Security
+
+### Hosting Security
+| Platform | Features |
+|----------|----------|
+| **Vercel** | Auto HTTPS, DDoS protection, global CDN |
+| **GitHub Pages** | HTTPS enforced, static-only |
+| **Netlify** | Auto HTTPS, DDoS protection, security headers |
+
+### Network Security (`_headers` file)
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: SAMEORIGIN`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: geolocation=(), payment=(), usb=(), bluetooth=()`
+
+---
+
+## 🚨 Incident Response
+
+### If a Security Issue Is Discovered
+1. **Immediate:** Rotate Supabase `anon` key, update `SB_KEY` in HTML files, re-deploy
+2. **Investigation:** Review `platform_logs`, check violation logs, assess scope
+3. **Remediation:** Apply fix, test in staging, deploy to production, notify users
+
+### Reporting
+- **WhatsApp:** +234 810 086 6322
+- **Email:** buildingmyictcareer@gmail.com
+- **Phone:** +234 907 790 7677
+
+---
+
+## 📜 Compliance
+
+### Nigeria Data Protection Act (NDPA) 2023
+- Collecting only necessary student data
+- Storing data securely with RLS protection
+- Providing data portability through exports
+- Allowing data deletion
+- Not sharing data with third parties
+
+---
+
+## 📞 Contact
+
+**HMG Concepts** — Security & Support
+
+| Channel | Contact |
+|---------|---------|
+| WhatsApp | [+234 810 086 6322](https://wa.me/2348100866322) |
+| Phone | +234 907 790 7677 |
+| Email | buildingmyictcareer@gmail.com |
+| Founder | Adewale Samson Adeagbo |
+| HMG Academy | [hmgacademy.pages.dev](https://hmgacademy.pages.dev/) |
+| HMG Concepts | [hmgconcepts.pages.dev](https://hmgconcepts.pages.dev/) |
+
+---
+
+> **HMG Academy CBT Pro v3.0** — *Learning Deliberately. Teaching Authentically.*  
+> © 2026 HMG Concepts. All features free — no paid APIs required.
