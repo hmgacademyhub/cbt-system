@@ -735,6 +735,9 @@
                 <div id="fullscreen-hint" style="margin-top:8px;font-size:11px;display:none;">
                     <button onclick="requestFullscreen()" style="width:auto;padding:5px 10px;font-size:11px;background:rgba(245,158,11,0.1);color:var(--warning);border:1px solid rgba(245,158,11,0.3);border-radius:6px;">↗ Re-enter Fullscreen</button>
                 </div>
+                <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5;">
+                    ⌨️ Shortcuts: <strong>A-D</strong> answer, <strong>N/→</strong> next, <strong>P/←</strong> previous, <strong>R</strong> flag, <strong>S</strong> submit.
+                </div>
             </div>
         </div>
         <div>
@@ -762,6 +765,8 @@
     <div id="save-indicator" style="display:none;text-align:center;padding:10px;font-size:13px;color:var(--text-muted);"><span style="animation:spin 1s linear infinite;display:inline-block;margin-right:6px;">⏳</span> Saving your result…</div>
 
     <div id="result-saved-badge" style="display:none;text-align:center;padding:8px 16px;margin-bottom:12px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;font-size:13px;font-weight:700;color:#10b981;">✅ Result saved to your teacher's dashboard</div>
+
+    <div id="cert-code-box" style="display:none;text-align:center;padding:8px 16px;margin-bottom:12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;font-size:12px;color:var(--text-muted);">Certificate / submission verification code: <strong id="cert-code" style="color:var(--info);font-family:monospace;letter-spacing:1px;">—</strong></div>
 
     <div id="result-save-error" style="display:none;padding:14px 16px;margin-bottom:16px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.35);border-radius:10px;">
         <div style="font-size:14px;font-weight:800;color:#ef4444;margin-bottom:6px;">⚠️ Result could not be saved to server</div>
@@ -854,6 +859,60 @@ function decodeMeta(r){
     const p=r.split('|');
     return{subject:p[0]||'—',cls:p[1]||'—',term:p[2]||'—',topic:p[3]||'—',type:p[4]||'—',session:p[5]||'—',passmark:parseInt(p[6])||50};
 }
+
+function parseQuestionData(raw){
+    if(Array.isArray(raw))return raw;
+    if(!raw)return [];
+    try{
+        let parsed=typeof raw==='string'?JSON.parse(raw):raw;
+        if(typeof parsed==='string')parsed=JSON.parse(parsed);
+        return Array.isArray(parsed)?parsed:[];
+    }catch(e){
+        console.warn('[CBT] Question data parse failed:',e);
+        return [];
+    }
+}
+
+async function sbRpc(name, body){
+    const res=await fetch(`${SB_URL}/rest/v1/rpc/${name}`,{
+        method:'POST',
+        headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+        body:JSON.stringify(body||{})
+    });
+    const text=await res.text();
+    let data=null;
+    try{data=text?JSON.parse(text):null;}catch(e){data=text;}
+    if(!res.ok){
+        const msg=(data&&(data.message||data.error||data.hint))||`HTTP ${res.status}`;
+        throw new Error(msg);
+    }
+    return data;
+}
+
+async function fetchPublicExamByCode(code){
+    try{
+        return await sbRpc('get_public_exam_by_code',{p_code:code});
+    }catch(rpcErr){
+        console.warn('[CBT] Public exam RPC unavailable, trying legacy REST fallback:',rpcErr.message);
+        const res=await fetch(`${SB_URL}/rest/v1/exams?code=eq.${encodeURIComponent(code)}&select=*`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+        if(!res.ok)throw rpcErr;
+        return await res.json();
+    }
+}
+
+async function getAttemptCount(examId,name,cls,studentId){
+    try{
+        const n=await sbRpc('get_exam_attempt_count',{p_exam_id:examId,p_student_name:name,p_student_class:cls,p_student_id_ref:studentId||''});
+        return Number(n)||0;
+    }catch(rpcErr){
+        console.warn('[CBT] Attempt-count RPC unavailable, trying legacy REST fallback:',rpcErr.message);
+        const res=await fetch(`${SB_URL}/rest/v1/results?student_name=eq.${encodeURIComponent(name)}&student_class=eq.${encodeURIComponent(cls)}&exam_id=eq.${examId}&select=id`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+        if(!res.ok)throw rpcErr;
+        const history=await res.json();
+        return Array.isArray(history)?history.length:0;
+    }
+}
+
 function showStatusMsg(m,t='error'){
     document.getElementById('status-message').innerHTML=`<div class="status-msg status-${t}">${m}</div>`;
 }
@@ -1015,13 +1074,12 @@ async function init(){
     }
     document.getElementById('code-entry-box')?.classList.add('hidden');
     try{
-        const res=await fetch(`${SB_URL}/rest/v1/exams?code=eq.${code}&select=*`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
-        const data=await res.json();
-        if(!data.length){showStatusMsg('Exam not found. Check your exam code or ask your teacher to resend the link/code. <button onclick="showCodeEntry()" style="width:auto;margin-left:8px;padding:6px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;">Try another code</button>');return;}
+        const data=await fetchPublicExamByCode(code);
+        if(!data.length){showStatusMsg('Exam not found or not open. Check your exam code or ask your teacher to resend/re-open the link/code. <button onclick="showCodeEntry()" style="width:auto;margin-left:8px;padding:6px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;">Try another code</button>');return;}
         exam=data[0];
         if(!exam.is_open){showStatusMsg('This exam is currently closed. Contact your teacher.');return;}
         if(exam.close_at && new Date(exam.close_at).getTime() <= Date.now()){
-            showStatusMsg('This exam has reached its scheduled closing time.HMT Academy CBT - a product of HMG Concepts. Contact your teacher if you believe this is an error.');
+            showStatusMsg('This exam has reached its scheduled closing time. HMG Academy CBT is a product of HMG Concepts. Contact your teacher if you believe this is an error.');
             return;
         }
         if(exam.start_at && new Date(exam.start_at).getTime() > Date.now()){
@@ -1052,13 +1110,7 @@ function init_admission(){
     document.getElementById('exam-banner').classList.remove('hidden');
     document.title='HMG Academy CBT | '+m.subject;
 
-    let rawQuestions;
-    try{ rawQuestions = JSON.parse(exam.csv_data); }
-    catch(parseErr){
-        console.error('[CBT] csv_data parse failed:',parseErr);
-        showStatusMsg('This exam could not be loaded because its question data is corrupted. Please ask your teacher to re-publish the exam.');
-        return;
-    }
+    let rawQuestions=parseQuestionData(exam.csv_data);
     if(!Array.isArray(rawQuestions)||rawQuestions.length===0){
         showStatusMsg('This exam has no questions yet. Please contact your teacher.');
         return;
@@ -1099,7 +1151,11 @@ function startWaitRoom(){
         if(diff<=0){
             clearInterval(interval);
             document.getElementById('wait-room-overlay').classList.add('hidden');
-            init_admission();
+            // Re-fetch so questions hidden before the start time are now delivered.
+            fetchPublicExamByCode(exam.code).then(data=>{
+                if(data&&data.length)exam=data[0];
+                init_admission();
+            }).catch(()=>init_admission());
         }else{
             const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
             timerEl.innerText=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
@@ -1157,14 +1213,22 @@ async function verifyStudentId(){
     const errEl=document.getElementById('verify-error');
     errEl.classList.add('hidden');
     try{
-        // Look up student in the students table by student_id AND teacher_id (exam owner)
-        const res=await fetch(
-            `${SB_URL}/rest/v1/students?student_id=eq.${encodeURIComponent(sid)}&teacher_id=eq.${exam.teacher_id}&select=*`,
-            {headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}}
-        );
-        const data=await res.json();
+        // Secure lookup: v3.1 uses RPC so anonymous users cannot browse the whole roster.
+        let data=[];
+        try{
+            data=await sbRpc('verify_student_for_exam',{p_exam_id:exam.id,p_student_id:sid});
+        }catch(rpcErr){
+            console.warn('[CBT] Student verification RPC unavailable, trying legacy REST fallback:',rpcErr.message);
+            if(!exam.teacher_id)throw rpcErr;
+            const res=await fetch(
+                `${SB_URL}/rest/v1/students?student_id=eq.${encodeURIComponent(sid)}&teacher_id=eq.${exam.teacher_id}&select=*`,
+                {headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}}
+            );
+            if(!res.ok)throw rpcErr;
+            data=await res.json();
+        }
         if(!data.length){
-            errEl.innerHTML=`❌ Student ID <strong>${sid}</strong> was not found in this class roster. Contact your teacher if you believe this is an error.`;
+            errEl.textContent=`❌ Student ID ${sid} was not found in this class roster. Contact your teacher if you believe this is an error.`;
             errEl.classList.remove('hidden');
             btn.disabled=false;btn.innerText='🔍 Verify My Identity';
             return;
@@ -1209,13 +1273,9 @@ async function validateAndStart(mode){
     btn.disabled=true;btn.innerText='Checking…';
 
     try{
-        // Check attempt count using resolved name
-        const res=await fetch(
-            `${SB_URL}/rest/v1/results?student_name=eq.${encodeURIComponent(finalStudentName)}&student_class=eq.${encodeURIComponent(finalStudentClass)}&exam_id=eq.${exam.id}&select=id`,
-            {headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}}
-        );
-        const history=await res.json();
-        attemptNum=history.length+1;
+        // Check attempt count through a safe RPC. Direct anonymous SELECT on results is intentionally blocked in v3.1.
+        const usedAttempts=await getAttemptCount(exam.id,finalStudentName,finalStudentClass,finalStudentId||'');
+        attemptNum=usedAttempts+1;
         if(attemptNum>Number(exam.attempt_limit)){
             alert(`You have reached the attempt limit (${exam.attempt_limit} attempt${exam.attempt_limit>1?'s':''}) for this exam.`);
             btn.disabled=false;btn.innerText='Start Assessment →';return;
@@ -1361,20 +1421,51 @@ function handleWindowBlur(){
     if(!examActive)return;blurCount++;
     setTimeout(()=>{if(!examActive)return;if(document.getElementById('calculator').style.display==='block')return;if(blurCount%2===1)recordViolation(V.WINDOW_BLUR,`blur #${blurCount}`);},400);
 }
+function _isTypingTarget(t){
+    return !!(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable));
+}
 function handleKeydown(e){
     if(!examActive)return;
     const ctrl=e.ctrlKey||e.metaKey;
-    if(ctrl&&e.key==='c'){e.preventDefault();e.stopPropagation();recordViolation(V.COPY_ATTEMPT);return;}
-    if(ctrl&&e.key==='x'){e.preventDefault();e.stopPropagation();recordViolation(V.CUT_ATTEMPT);return;}
-    if(ctrl&&e.key==='a'){e.preventDefault();e.stopPropagation();recordViolation(V.SELECT_ALL);return;}
-    if(ctrl&&e.key==='v'){e.preventDefault();e.stopPropagation();recordViolation(V.PASTE);return;}
-    if(ctrl&&e.key==='p'){e.preventDefault();e.stopPropagation();recordViolation(V.PRINT_KEY);return;}
-    if(ctrl&&e.key==='u'){e.preventDefault();e.stopPropagation();recordViolation(V.VIEW_SOURCE);return;}
-    if(ctrl&&e.key==='s'){e.preventDefault();e.stopPropagation();return;}
+    const typing=_isTypingTarget(e.target);
+
+    // Always block browser/system shortcuts that can leak or disrupt the exam.
+    if(ctrl&&e.key.toLowerCase()==='p'){e.preventDefault();e.stopPropagation();recordViolation(V.PRINT_KEY);return;}
+    if(ctrl&&e.key.toLowerCase()==='u'){e.preventDefault();e.stopPropagation();recordViolation(V.VIEW_SOURCE);return;}
+    if(ctrl&&e.key.toLowerCase()==='s'){e.preventDefault();e.stopPropagation();return;}
     if(e.key==='F12'){e.preventDefault();e.stopPropagation();recordViolation(V.DEVTOOLS_KEY);return;}
-    if(e.key==='F5'||(ctrl&&e.key==='r')){e.preventDefault();e.stopPropagation();return;}
+    if(e.key==='F5'||(ctrl&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();return;}
     if(e.key==='PrintScreen'){e.preventDefault();e.stopPropagation();recordViolation(V.SCREENSHOT);return;}
-    if(['F1','F2','F3','F4','F6','F7','F8','F9','F10','F11'].includes(e.key)){e.preventDefault();e.stopPropagation();}
+    if(['F1','F2','F3','F4','F6','F7','F8','F9','F10','F11'].includes(e.key)){e.preventDefault();e.stopPropagation();return;}
+
+    // In typed-answer fields, allow normal typing/editing; paste is still blocked by the paste listener.
+    if(typing)return;
+
+    if(ctrl&&e.key.toLowerCase()==='c'){e.preventDefault();e.stopPropagation();recordViolation(V.COPY_ATTEMPT);return;}
+    if(ctrl&&e.key.toLowerCase()==='x'){e.preventDefault();e.stopPropagation();recordViolation(V.CUT_ATTEMPT);return;}
+    if(ctrl&&e.key.toLowerCase()==='a'){e.preventDefault();e.stopPropagation();recordViolation(V.SELECT_ALL);return;}
+    if(ctrl&&e.key.toLowerCase()==='v'){e.preventDefault();e.stopPropagation();recordViolation(V.PASTE);return;}
+
+    // JAMB-style keyboard shortcuts for faster CBT practice.
+    const key=e.key.length===1?e.key.toUpperCase():e.key;
+    const q=questions[current];
+    if(q){
+        const origKey=q._orig;
+        const qtype=getQType(q);
+        if(['A','B','C','D'].includes(key)){
+            if(qtype==='mcq' && q[key.toLowerCase()]){answers[origKey]=key;showQ();renderQNav();e.preventDefault();return;}
+            if(qtype==='tf' && ['A','B'].includes(key)){answers[origKey]=key;showQ();renderQNav();e.preventDefault();return;}
+            if(qtype==='mrq' && q[key.toLowerCase()]){
+                const sel=mrqGetSelected(origKey);
+                if(sel.has(key))sel.delete(key);else sel.add(key);
+                mrqSetSelected(origKey,sel);showQ();renderQNav();e.preventDefault();return;
+            }
+        }
+    }
+    if(key==='N'||e.key==='ArrowRight'){e.preventDefault();next();return;}
+    if(key==='P'||e.key==='ArrowLeft'){e.preventDefault();prev();return;}
+    if(key==='R'){e.preventDefault();toggleFlag();return;}
+    if(key==='S'){e.preventDefault();openSubmitModal();return;}
 }
 function handleRightClick(e){if(!examActive)return;e.preventDefault();e.stopPropagation();recordViolation(V.RIGHT_CLICK,`at (${e.clientX},${e.clientY})`);return false;}
 function handleCopy(e){if(!examActive)return;e.preventDefault();e.stopPropagation();if(violationLog[violationLog.length-1]?.event!==V.COPY_ATTEMPT)recordViolation(V.COPY_ATTEMPT,'copy event');}
@@ -1452,7 +1543,7 @@ function showQ(prevIndex){
     let qLabel = `${current+1}. ${q.q}`;
      let metaHtml = '';
      if(q.section) metaHtml += `<div style="font-size:12px;font-weight:800;color:var(--info);text-transform:uppercase;margin-bottom:8px;letter-spacing:1px;">${escapeHtmlStudent(q.section)}</div>`;
-     if(q.difficulty) metaHtml += `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.1);margin-bottom:8px;display:inline-block;">${q.difficulty}</span>`;
+     if(q.difficulty) metaHtml += `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.1);margin-bottom:8px;display:inline-block;">${escapeHtmlStudent(q.difficulty)}</span>`;
      
      document.getElementById('q-text').innerHTML = metaHtml + '<br>' + escapeHtmlStudent(qLabel);
     document.getElementById('progress-text').innerText=`Question ${current+1} of ${questions.length}`;
@@ -1888,7 +1979,7 @@ function loadDraft(){
     current=d.current||0;
     // Restore original shuffled order if stored
     if(d.questionOrder&&d.questionOrder.length===questions.length){
-      const raw2=JSON.parse(exam.csv_data);
+      const raw2=parseQuestionData(exam.csv_data);
       raw2.forEach((q,i)=>{q._orig=i;});
       const reordered=d.questionOrder.map(origIdx=>raw2[origIdx]).filter(Boolean);
       if(reordered.length===questions.length)questions=reordered;
@@ -2100,10 +2191,14 @@ async function submitExam(){
     });
     const total=questions.length;
 
-    // Safety: force integers (partial credit may make score a float — round to 1dp for display)
-    const scoreRaw=score;
-    const scoreInt  = Math.round(score*10)/10;  // keep 1dp for partial credit
-    const scoreIntDb= Math.round(score);         // integer for DB score column
+    // Partial credit and negative marking.
+    // v3.1 stores decimal scores in Supabase, so the displayed score and teacher dashboard match.
+    const rawScore = score;
+    const negativeMark = Math.max(0, Number(exam.negative_mark)||0);
+    const penalty = negativeMark>0 ? (wrong * negativeMark) : 0;
+    const scoreRaw = Math.max(0, rawScore - penalty);
+    const scoreInt  = Math.round(scoreRaw*10)/10;  // keep 1dp for partial credit
+    const scoreIntDb= scoreInt;                    // NUMERIC column in v3.1
     const totalInt  = Number.isFinite(total)  ? Math.floor(total)  : questions.length;
     const percentage=totalInt>0?Math.round((scoreRaw/totalInt)*100):0;
 
@@ -2114,6 +2209,7 @@ async function submitExam(){
     });
     const m=decodeMeta(exam.subject);
     const passmark=m.passmark;
+    const releaseNow = exam.release_results !== false;
 
     // Switch views
     document.getElementById('exam-card').classList.add('hidden');
@@ -2127,14 +2223,15 @@ async function submitExam(){
     const ringColour=percentage>=passmark?(percentage>=80?'#10b981':'#f59e0b'):'#ef4444';
     const rf=document.getElementById('ring-fill');
     rf.setAttribute('stroke',ringColour);
-    setTimeout(()=>{rf.style.strokeDashoffset=offset;},100);
+    if(releaseNow) setTimeout(()=>{rf.style.strokeDashoffset=offset;},100); else rf.style.strokeDashoffset=427;
     document.getElementById('ring-pct').innerText=percentage+'%';
     document.getElementById('ring-pct').style.color=ringColour;
     document.getElementById('ring-sub').innerText=`${scoreInt}/${totalInt}`;
 
     // Grade labels
     let gradeLabel,gradeClass,title,motivational;
-    if(percentage>=90){gradeLabel='Distinction';gradeClass='grade-pass';title='Outstanding!';motivational=`Excellent work! You scored ${percentage}% — a Distinction.`;}
+    if(!releaseNow){gradeLabel='Pending Release';gradeClass='grade-warn';title='Submission Received';motivational='Your answers have been submitted successfully. Your teacher has chosen to hold results until manual release.';}
+    else if(percentage>=90){gradeLabel='Distinction';gradeClass='grade-pass';title='Outstanding!';motivational=`Excellent work! You scored ${percentage}% — a Distinction.`;}
     else if(percentage>=70){gradeLabel='Credit';gradeClass='grade-pass';title='Well Done!';motivational=`Great performance! You scored ${percentage}% — a Credit grade.`;}
     else if(percentage>=passmark){gradeLabel='Pass';gradeClass='grade-warn';title='Assessment Passed';motivational=`You passed with ${percentage}%. Review your wrong answers to improve.`;}
     else if(percentage>=40){gradeLabel='Near Miss';gradeClass='grade-fail';title='Almost There';motivational=`You scored ${percentage}% — just below the ${passmark}% pass mark. Study the areas you missed.`;}
@@ -2150,12 +2247,22 @@ async function submitExam(){
     document.getElementById('stat-skipped').innerText=skipped;
     document.getElementById('stat-time').innerText=`${Math.floor(timeTaken/60)}m ${timeTaken%60}s`;
     document.getElementById('ring-sub').innerText=`${scoreInt}/${totalInt}`;
+    if(!releaseNow){
+        rf.style.strokeDashoffset=427;
+        document.getElementById('ring-pct').innerText='HELD';
+        document.getElementById('ring-pct').style.fontSize='24px';
+        document.getElementById('ring-sub').innerText='Pending';
+        document.getElementById('stat-score').innerText='Held';
+        document.getElementById('stat-correct').innerText='—';
+        document.getElementById('stat-wrong').innerText='—';
+        document.getElementById('stat-skipped').innerText='—';
+    }
 
     // PDF metadata
     document.getElementById('pdf-title').innerText=`${m.subject} — ${m.type} Result`;
     document.getElementById('pdf-meta').innerText=`${m.cls} · ${m.term}${m.topic!=='—'?' · '+m.topic:''}${m.session!=='—'?' · '+m.session:''}`;
     document.getElementById('pdf-student').innerText=`Student: ${finalStudentName} | Class: ${finalStudentClass}${finalStudentId?' | ID: '+finalStudentId:''} | Attempt: #${attemptNum} | Date: ${new Date().toLocaleDateString('en-GB')}`;
-    document.getElementById('pdf-score-big').innerText=`${percentage}% — ${gradeLabel} (${scoreInt}/${totalInt})`;
+    document.getElementById('pdf-score-big').innerText=releaseNow?`${percentage}% — ${gradeLabel} (${scoreInt}/${totalInt})`:'Result held by teacher — submission recorded';
     document.getElementById('pdf-score-big').style.color=ringColour;
 
     // Integrity summary
@@ -2168,11 +2275,13 @@ async function submitExam(){
     }
 
     // Confetti for passing
-    if(percentage>=passmark) setTimeout(launchConfetti,600);
+    if(releaseNow && percentage>=passmark) setTimeout(launchConfetti,600);
 
     // Review — keyed by q._orig so review matches what student actually saw
     const rb=document.getElementById('review-box');rb.innerHTML='';
-    questions.forEach((q,i)=>{
+    if(!releaseNow){
+        rb.innerHTML='<div class="integrity-result clean" style="text-align:left;"><strong style="color:var(--warning);">🔒 Result review is locked.</strong><br>Your teacher/admin will release your score, correct answers, and explanations when ready.</div>';
+    } else questions.forEach((q,i)=>{
         const origKey=q._orig;
         const qtype=getQType(q);
         const sa=answers[origKey]||null;
@@ -2376,7 +2485,7 @@ async function submitExam(){
     // so the teacher can evaluate correctness without needing the session pool.
     // For ORDERING we save ordered_texts: [{pos,text,correct_text,is_correct}]
     // so the teacher can show a side-by-side position comparison.
-    const answersData={ time_analytics: questionTimes };
+    const answersData={ time_analytics: questionTimes, scoring_summary:{raw_score:rawScore,negative_mark:negativeMark,penalty,adjusted_score:scoreRaw,percentage} };
     questions.forEach((q)=>{
         const origKey=String(q._orig);
         const qtype=getQType(q);
@@ -2461,6 +2570,10 @@ async function submitExam(){
     }
 
     const certCode = Math.random().toString(36).substring(2,10).toUpperCase();
+    const certEl=document.getElementById('cert-code');
+    const certBox=document.getElementById('cert-code-box');
+    if(certEl)certEl.innerText=certCode;
+    if(certBox)certBox.style.display='block';
     const fullBody = {
         exam_id:        exam.id,
         student_name:   finalStudentName,
@@ -2477,7 +2590,8 @@ async function submitExam(){
         answers_data:   answersData,
         violations:     violationCount,
         violation_log:  violationLog,
-        proctor_data:   proctoringData
+        proctor_data:   proctoringData,
+        cert_code:      certCode
     };
     _lastResultBackup={...fullBody, exam_subject:m.subject, exam_meta:m, percentage, display_score:scoreInt, saved_locally_at:new Date().toISOString()};
     if(!navigator.onLine){
@@ -2527,7 +2641,8 @@ async function submitExam(){
                     skipped_count:  skipped,
                     attempt_number: attemptNum,
                     time_taken:     timeTaken,
-                    answers_data:   answersData
+                    answers_data:   answersData,
+                    cert_code:      certCode
                 };
                 await _attemptSave(noExtra, 'no-proctor-no-violations');
                 saved = true;
@@ -2614,7 +2729,7 @@ function shareResult(){
   const pct=document.getElementById('ring-pct').innerText;
   const grade=document.getElementById('grade-badge').innerText;
   const subject=document.getElementById('exam-subject')?.innerText||'Assessment';
-  const text=`I scored ${pct} (${grade}) on my ${subject} CBT assessment on HMG Academy CBT Pro! 🎓 Built by HMG Concepts.`;
+  const text=pct==='HELD'?`I submitted my ${subject} CBT assessment on HMG Academy CBT Pro. Result release is pending. 🎓 Built by HMG Concepts.`:`I scored ${pct} (${grade}) on my ${subject} CBT assessment on HMG Academy CBT Pro! 🎓 Built by HMG Concepts.`;
   if(navigator.share){
     navigator.share({title:'My HMG Academy CBT Result',text,url:window.location.href}).catch(()=>{});
   } else {

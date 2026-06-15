@@ -1,170 +1,198 @@
-# 🔒 HMG Academy CBT Pro v3.0 — Security Policy
+# Security Policy — HMG Academy CBT Pro v3.1
 
-> **Security best practices and data protection guidelines.**  
-> Built by **HMG Concepts** — *Learning Deliberately. Teaching Authentically.*
-
----
-
-## 📋 Table of Contents
-1. [Security Architecture](#security-architecture)
-2. [Data Protection](#data-protection)
-3. [Access Control](#access-control)
-4. [Exam Integrity](#exam-integrity)
-5. [Infrastructure Security](#infrastructure-security)
-6. [Incident Response](#incident-response)
-7. [Compliance](#compliance)
-8. [Contact](#contact)
+This document explains the security model, required configuration, operational precautions, and known limitations.
 
 ---
 
-## 🏗️ Security Architecture
+## 1. Security model
 
-### Defense in Depth
-1. **Database Layer (RLS)** — PostgreSQL Row-Level Security ensures each teacher only accesses their own data
-2. **Application Layer** — Authentication checks on every API call
-3. **Transport Layer** — HTTPS encryption for all communications
-4. **Client Layer** — No sensitive keys exposed in frontend code
+HMG Academy CBT Pro is a static frontend application backed by Supabase. Because HTML/JavaScript files are public by design, all critical access control must happen in Supabase through:
 
-### Security-First Design
-- **RLS-First Architecture** — Data isolation enforced at the database level
-- **Zero Service Role Exposure** — The `service_role` key is never in frontend files
-- **Anon-Only Access** — Only the `anon` public key is used in the browser
-- **Least Privilege** — Each role has only the permissions it needs
+- Row Level Security (RLS)
+- SQL helper functions
+- RPC functions
+- PostgreSQL-side admin checks
+- strict use of anon key only in frontend
+
+The v3.1 SQL setup implements this model in `COMPLETE_SQL_SETUP.sql`.
 
 ---
 
-## 🛡️ Data Protection
+## 2. Keys and secrets
 
-### Student Data
-| Data Type | Storage | Protection |
-|-----------|---------|------------|
-| Name | Supabase (results table) | RLS-protected |
-| Class | Supabase (results table) | RLS-protected |
-| Student ID | Supabase (results table) | RLS-protected |
-| Exam Answers | Supabase (results.answers_data) | RLS-protected |
-| Proctor Photos | Supabase (results.proctor_data) | RLS-protected, base64 |
-| Violation Logs | Supabase (results.violation_log) | RLS-protected |
+### Safe in frontend
 
-### Data Retention
-- Results stored indefinitely within Supabase free tier limits
-- Archived exams preserved but hidden from main list
-- Deleted exams and results permanently removed (CASCADE)
-- Export backups stored locally on teacher's device
+- Supabase Project URL
+- Supabase anon public key
 
-### Data Portability
-Teachers can export data at any time:
-- Exam Package Export (JSON)
-- Results CSV Export
-- Platform CSV Export (admin only)
-- Emergency Backup (student JSON)
+### Never safe in frontend
+
+- Supabase `service_role` key
+- Database password
+- SMTP credentials
+- private API keys
+- AI API keys
+- payment secret keys
+
+If a `service_role` key is ever exposed, rotate it immediately in Supabase.
 
 ---
 
-## 🔐 Access Control
+## 3. RLS tables
 
-### Role-Based Access
-| Role | Permissions |
-|------|-------------|
-| **Student** | Submit results, view own results, take exams |
-| **Teacher** | Create/manage exams, view own results, manage own students |
-| **Admin** | All teacher permissions + manage all teachers, platform-wide access |
-
-### Teacher Approval Workflow
-1. Teacher creates account → status set to `pending` by trigger
-2. Teacher sees "Awaiting Approval" screen
-3. Admin reviews and approves from admin panel
-4. Teacher status changes to `active` → gains dashboard access
-
-### Session Security
-- **Admin sessions** expire after 1 hour (with refresh token support)
-- **Teacher sessions** managed by Supabase Auth with automatic refresh
-- **Student sessions** are single-use (one exam, one submission)
-
-### ⚠️ Never Expose the Service Role Key
-The `service_role` key has **unrestricted database access** and should **never** appear in frontend files.
+| Table | Protection |
+|---|---|
+| `profiles` | Users see/update own profile; admins supervise all. |
+| `exams` | Teachers manage own exams; admins supervise all. |
+| `results` | Teachers see results for own exams; admins supervise all; students can insert only into open active exams. |
+| `students` | Teachers manage own rosters; admins supervise all; anonymous lookup is blocked. |
 
 ---
 
-## 🛡️ Exam Integrity
+## 4. Public student access
 
-### Anti-Cheat Measures
-| Measure | Description |
-|---------|-------------|
-| Tab-Switch Detection | Warns and logs tab/window switches |
-| Fullscreen Enforcement | Detects exit from fullscreen mode |
-| DevTools Detection | Flags developer tools opening |
-| Right-Click Disabled | Prevents copy/paste of content |
-| Screen Watermark | Dynamic anti-screenshot overlay |
-| One-Submission Lock | Prevents duplicate attempts |
-| Proctor Photo Capture | 3 intake photos + periodic snapshots |
-| Multiple People Detection | Basic face detection warning |
-| Audio Monitoring | Detects unusual audio levels |
-| Violation Logging | All events recorded with timestamps |
+Students are not logged in. v3.1 therefore uses safe public RPCs instead of broad anonymous table reads.
 
-### Result Verification
-- **Verification Codes** — Unique hash per result certificate
-- **Stored Score Counts** — Ground truth saved at submission
-- **Proctor Evidence** — Photos and violation logs attached
-- **Emergency Backup** — JSON download if server save fails
+| RPC | Purpose |
+|---|---|
+| `get_public_exam_by_code` | Loads only an open, non-archived, non-expired exam by code. Hides question data before scheduled start time. |
+| `verify_student_for_exam` | Confirms a student ID belongs to the exam teacher’s roster without exposing the whole roster. |
+| `get_exam_attempt_count` | Counts previous attempts for attempt-limit enforcement without exposing all results. |
 
 ---
 
-## 🌐 Infrastructure Security
+## 5. Admin access
 
-### Hosting Security
-| Platform | Features |
-|----------|----------|
-| **Vercel** | Auto HTTPS, DDoS protection, global CDN |
-| **GitHub Pages** | HTTPS enforced, static-only |
-| **Netlify** | Auto HTTPS, DDoS protection, security headers |
+Admin RPC functions call `public.is_platform_admin()` inside PostgreSQL. A frontend-only admin check is never enough.
 
-### Network Security (`_headers` file)
-- `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: SAMEORIGIN`
-- `Referrer-Policy: strict-origin-when-cross-origin`
-- `Permissions-Policy: geolocation=(), payment=(), usb=(), bluetooth=()`
+Admin access is granted when:
 
----
+- the authenticated user has a profile row with `is_admin = true` or `role = 'admin'`; and
+- `status = 'active'`;
 
-## 🚨 Incident Response
+or when the configured emergency admin email matches the JWT email.
 
-### If a Security Issue Is Discovered
-1. **Immediate:** Rotate Supabase `anon` key, update `SB_KEY` in HTML files, re-deploy
-2. **Investigation:** Review `platform_logs`, check violation logs, assess scope
-3. **Remediation:** Apply fix, test in staging, deploy to production, notify users
+Default embedded admin email in the repo:
 
-### Reporting
-- **WhatsApp:** +234 810 086 6322
-- **Email:** buildingmyictcareer@gmail.com
-- **Phone:** +234 907 790 7677
+```text
+buildingmyictcareer@gmail.com
+```
+
+Change it in production if needed.
 
 ---
 
-## 📜 Compliance
+## 6. Exam-code safety
 
-### Nigeria Data Protection Act (NDPA) 2023
-- Collecting only necessary student data
-- Storing data securely with RLS protection
-- Providing data portability through exports
-- Allowing data deletion
-- Not sharing data with third parties
+Exam codes are bearer-style access tokens. Anyone with the code/link can enter an open exam unless the exam is in registered mode.
 
----
+Recommended controls:
 
-## 📞 Contact
-
-**HMG Concepts** — Security & Support
-
-| Channel | Contact |
-|---------|---------|
-| WhatsApp | [+234 810 086 6322](https://wa.me/2348100866322) |
-| Phone | +234 907 790 7677 |
-| Email | buildingmyictcareer@gmail.com |
-| Founder | Adewale Samson Adeagbo |
-| HMG Academy | [hmgacademy.pages.dev](https://hmgacademy.pages.dev/) |
-| HMG Concepts | [hmgconcepts.pages.dev](https://hmgconcepts.pages.dev/) |
+- Use registered mode for high-stakes exams.
+- Rotate codes if a link leaks.
+- Set close time.
+- Use start time for scheduled exams.
+- Disable/close exams immediately after the session.
+- Avoid posting high-stakes exam links in public groups.
 
 ---
 
-> **HMG Academy CBT Pro v3.0** — *Learning Deliberately. Teaching Authentically.*  
-> © 2026 HMG Concepts. All features free — no paid APIs required.
+## 7. Proctoring and integrity limits
+
+Browser proctoring provides useful flags, not absolute proof of cheating.
+
+### What it can detect/flag
+
+- tab switching
+- app/window focus loss
+- right click
+- copy/cut/paste attempts
+- print/view-source/devtools shortcuts
+- likely devtools window opening
+- fullscreen exit
+- camera snapshots if permitted
+- multiple/no-face signal when optional model loads
+- loud audio spikes
+
+### What it cannot guarantee
+
+- that the student has no second device
+- perfect identity verification
+- perfect face detection on all devices
+- impossible-to-bypass browser controls
+- high-stakes legal proctoring equivalence
+
+For high-stakes exams, combine the platform with human invigilation, lab seating controls, ID checks, and post-exam result review.
+
+---
+
+## 8. Privacy guidance
+
+The platform may store:
+
+- student name/class/ID
+- answers
+- score
+- timing
+- integrity logs
+- optional proctoring snapshots
+
+Schools should:
+
+- inform students before proctored exams;
+- avoid unnecessary camera use for low-stakes quizzes;
+- export and delete old data according to school policy;
+- restrict admin access;
+- protect CSV exports and backups.
+
+---
+
+## 9. Incident response
+
+If something goes wrong:
+
+1. Close affected exams in teacher/admin dashboard.
+2. Rotate exam codes.
+3. Export logs/results for audit.
+4. Check Supabase SQL/RLS policies.
+5. Check whether a frontend file accidentally contains a secret.
+6. Rotate Supabase keys if secrets were exposed.
+7. Re-run `COMPLETE_SQL_SETUP.sql`.
+8. Re-test with a dummy exam.
+
+---
+
+## 10. Production hardening checklist
+
+- [ ] HTTPS enabled.
+- [ ] `COMPLETE_SQL_SETUP.sql` run fully.
+- [ ] RLS enabled on all four tables.
+- [ ] No broad anonymous `SELECT` policy on `students`.
+- [ ] No broad anonymous `SELECT` policy on `results`.
+- [ ] Student insert policy checks `is_exam_open_for_submission`.
+- [ ] Admin RPC functions use `is_platform_admin`.
+- [ ] No `service_role` key in frontend.
+- [ ] Admin profile is active.
+- [ ] Teacher approval workflow tested.
+- [ ] Link checker tested.
+- [ ] Deployment validator tested.
+- [ ] Data export/backup policy defined.
+
+---
+
+## 11. Reporting vulnerabilities
+
+Contact HMG Concepts / HMG Academy:
+
+- WhatsApp: +234 810 086 6322
+- Phone: +234 907 790 7677
+- Email: hismarvellousgrace@gmail.com
+- Tech/partnerships: buildingmyictcareer@gmail.com
+
+Please include:
+
+- page/file affected;
+- steps to reproduce;
+- browser/device;
+- screenshots or console errors if available;
+- whether real student data was involved.

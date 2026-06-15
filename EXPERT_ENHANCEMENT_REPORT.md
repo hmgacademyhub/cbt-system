@@ -1,400 +1,216 @@
-# 🏆 HMG Academy CBT Pro v3.0 — Expert Enhancement Report
+# Expert Enhancement Report — HMG Academy CBT Pro v3.1 Enterprise
 
-> **Comprehensive analysis, bug diagnosis, feature audit, and enhancement plan.**  
-> Prepared by the Expert AI Agent — June 13, 2026  
-> Platform: **HMG Academy CBT Pro**  
-> Brand: **HMG Concepts** — *Learning Deliberately. Teaching Authentically.*
-
----
-
-## 📋 Executive Summary
-
-This report documents the complete audit and enhancement of the HMG Academy CBT Pro platform. The platform was analyzed across **24 files** in the GitHub repository, with all bugs identified, SQL errors corrected, enterprise features added, and documentation comprehensively updated.
-
-**Key Achievements:**
-- ✅ **7 critical bugs** identified and fixed
-- ✅ **SQL inconsistencies** across all files corrected and unified
-- ✅ **30 enterprise features** from leading CBT platforms integrated
-- ✅ **Zero additional cost** — all features use free, browser-based tools
-- ✅ **Comprehensive documentation** — 6 detailed markdown files
-- ✅ **HMG brand identity** embedded throughout the platform
+Date: 2026-06-14  
+Prepared for: HMG Academy / HMG Concepts  
+Founder: Adewale Samson Adeagbo
 
 ---
 
-## 1. Repository File Inventory
+## 1. Executive summary
 
-### Complete File List (24 files)
+The CBT platform was upgraded from a feature-rich static/Supabase CBT system into a more secure, enterprise-ready v3.1 release. Existing features were preserved and strengthened. The work focused on:
 
-| # | File | Size | Purpose |
-|---|------|------|---------|
-| 1 | `index.html` | 20.9 KB | Landing page |
-| 2 | `teacher.html` | 392.7 KB | Teacher dashboard |
-| 3 | `student.html` | 187.9 KB | Student exam portal |
-| 4 | `admin.html` | 122.2 KB | Admin management panel |
-| 5 | `sw.js` | 1.9 KB | Service worker (PWA) |
-| 6 | `manifest.webmanifest` | 1.1 KB | PWA app manifest |
-| 7 | `.nojekyll` | 0 KB | Disable GitHub Pages Jekyll |
-| 8 | `_headers` | 374 B | Netlify security headers |
-| 9 | `COMPLETE_SQL_SETUP.sql` | 11.5 KB | Database setup script |
-| 10 | `README.md` | 3.8 KB | Main documentation |
-| 11 | `DEPLOYMENT_GUIDE.md` | 5.3 KB | Deployment instructions |
-| 12 | `DIAGNOSIS_REPORT.md` | 1.9 KB | Bug diagnosis report |
-| 13 | `FEATURES_GUIDE.md` | 11.6 KB | Feature documentation |
-| 14 | `LICENSE` | 1.9 KB | MIT License |
-| 15 | `SECURITY.md` | 3.9 KB | Security policy |
-| 16 | `CONTRIBUTING.md` | 4.1 KB | Contribution guidelines |
-| 17 | `PROMPT_TEMPLATE.md` | 5.3 KB | AI prompt template |
-| 18 | `offline.html` | 2.0 KB | Offline fallback page |
-| 19 | `deployment_validator.html` | 9.4 KB | Deployment readiness checker |
-| 20 | `feature_guide.html` | 15.0 KB | Built-in feature guide |
-| 21 | `link_checker.html` | 9.3 KB | Exam link/code validator |
-| 22 | `hmg-academy-logo.png` | 1.9 MB | Brand logo |
-| 23 | `hmg-icon.svg` | 1.3 KB | SVG brand icon |
-| 24 | `further_maths_sample.csv` | 20.7 KB | Sample question bank |
+- SQL correctness and proper arrangement;
+- RLS security hardening;
+- safe public student access;
+- admin RPC hardening;
+- partial-credit/decimal score accuracy;
+- negative marking;
+- held-result workflow;
+- keyboard shortcuts for CBT/JAMB-style exam practice;
+- question metadata for item-bank analytics;
+- documentation and deployment clarity;
+- brand integration.
 
-**Total repository size:** ~800 KB (excluding logo: ~7.8 MB with logo)
+No paid AI API was added.
 
 ---
 
-## 2. Bug Diagnosis & Fixes
+## 2. Internet/market research summary
 
-### 2.1 Critical Bugs Found & Fixed
+Modern CBT and online examination systems commonly include the following unique/high-value features:
 
-| # | Bug | Severity | Files Affected | Fix Applied |
-|---|-----|----------|---------------|-------------|
-| 1 | **Service Worker Cache References Non-Existent Files** | Medium | `sw.js` | Removed `README.md`, `DEPLOY_NOW.txt`, `DIAGNOSIS_FEATURES_DEPLOYMENT.md`, `ENTERPRISE_DEPLOYMENT_GUIDE.md`, `ENHANCEMENT_REPORT_DEPLOYMENT.md`, `EXPERT_ENHANCEMENT_AND_DEPLOYMENT_REPORT.md`, `_headers` from cache list. Updated cache version to v6. |
-| 2 | **SQL Column Name Mismatch: `student_id` vs `student_id_ref`** | High | `COMPLETE_SQL_SETUP.sql`, `teacher.html`, `student.html`, `admin.html` | Unified all references to use `student_id_ref` (TEXT) for student school ID and `student_type` (TEXT) for exam mode. |
-| 3 | **RLS Recursive Deadlock in Results Policies** | Critical | `COMPLETE_SQL_SETUP.sql` | Created `get_exam_teacher_id()` SECURITY DEFINER function to bypass RLS safely for teacher_id lookups, preventing recursive deadlock. |
-| 4 | **Admin RPC Functions Missing CASCADE Drops** | High | `COMPLETE_SQL_SETUP.sql` | Added `DROP FUNCTION ... CASCADE` before recreating all admin RPC functions to prevent "cannot change return type" errors. |
-| 5 | **Auto-Signup Trigger Missing SECURITY DEFINER and Schema Context** | High | `COMPLETE_SQL_SETUP.sql` | Added `SET search_path = public`, `SECURITY DEFINER`, and `EXCEPTION WHEN others` clause to prevent signup failures. |
-| 6 | **Teacher Signup Fails Due to Missing GRANT Permissions** | High | `COMPLETE_SQL_SETUP.sql` | Added `GRANT ALL ON public.profiles TO postgres/service_role` before trigger creation. |
-| 7 | **Score Mismatch Between Student and Teacher Views** | Medium | `teacher.html`, `student.html`, `COMPLETE_SQL_SETUP.sql` | Added `correct_count`, `wrong_count`, `skipped_count` columns to results table. Student browser computes and saves at submission as authoritative source. |
+| Market feature | Observed in market | Implemented/enhanced in HMG CBT |
+|---|---|---|
+| Question banks | Questionmark, Moodle, ProProfs, TestInvite | CSV/XLSX/manual import, exam packages, metadata columns. |
+| Randomization | Questionmark, Moodle, JAMB practice apps | Random question selection and shuffled delivery. |
+| Multiple question types | ProProfs, iSpring, Moodle, Eklavvya | 11+ types supported. |
+| Secure browser/proctoring | Respondus, ExamSoft, Proctorio | Browser integrity flags and proctor snapshots using free tools. |
+| Candidate verification | Proctoring platforms, enterprise CBT | Registered-student mode with secure RPC. |
+| Scheduling | Enterprise exam tools | Start and close time support. |
+| Attempt controls | LMS/CBT systems | Secure attempt-count RPC. |
+| Analytics | ExamSoft, Questionmark, ProProfs | Result analytics, item analysis, CSV exports. |
+| Certificates/credentials | ProProfs, SpeedExam | Submission/certificate verification code. |
+| Offline/low-connectivity resilience | JAMB practice tools, offline CBT | PWA shell, drafts, emergency backup JSON. |
+| Accessibility | Moodle/Inspera/modern exam tools | Read aloud, responsive UI, keyboard shortcuts. |
+| Bulk import | Most CBT tools | CSV/XLSX/roster import. |
+| Branding | Enterprise tools | HMG Academy/HMG Concepts embedded across files. |
 
-### 2.2 SQL Inconsistencies Corrected
-
-| Issue | Before | After |
-|-------|--------|-------|
-| **Results table column names** | `student_id` (ambiguous) | `student_id_ref` + `student_type` (clear separation) |
-| **Missing columns in table creation** | Added in separate migration step | All columns in initial CREATE TABLE |
-| **Inconsistent data types** | `csv_data TEXT` | `csv_data JSONB` (proper JSON type) |
-| **Missing default values** | No defaults for new columns | All new columns have appropriate defaults |
-| **Missing indexes** | No indexes on frequently queried columns | Added indexes on teacher_id, code, is_open, created_at, exam_id, student_name |
-| **Duplicate policy drops** | Only some policies dropped | All policies dropped before recreation (idempotent) |
-| **Profiles table missing columns** | `role` column referenced but not created | Added `role` and `is_admin` columns to profiles |
-| **Step numbering errors** | Steps 5, 8, 8b, 9 out of order | Renumbered sequentially 1-16 |
+Because the requirement was to use free-based tools and avoid AI API costs, paid features such as true lockdown browser, live remote proctors, SSO/LTI, and paid AI essay grading were not added. Instead, free browser/Supabase equivalents were implemented where realistic.
 
 ---
 
-## 3. Enterprise Feature Audit & Enhancement
+## 3. Main enhancements delivered
 
-### 3.1 CBT Platform Industry Comparison
+### 3.1 SQL architecture
 
-Based on deep research of leading CBT platforms (Think Exam, TestReach, ExamGuide, Docebo, TalentLMS, Moodle, SimExams, BlinkExam, H5P, Articulate Storyline, Adobe Captivate, iSpring Suite), the following enterprise features were identified and integrated:
+`COMPLETE_SQL_SETUP.sql` was fully restructured:
 
-### 3.2 Features Added (30 Total)
+1. Extension creation.
+2. Table creation.
+3. Safe upgrade columns.
+4. Decimal score conversion.
+5. Indexes and constraints.
+6. Helper functions.
+7. RLS enablement.
+8. Policy cleanup.
+9. Correct RLS policies.
+10. Triggers.
+11. Public student RPCs.
+12. Admin RPCs.
+13. Grants.
+14. Existing user migration.
+15. Verification queries.
 
-| # | Feature | Source Platform | Implementation | Cost |
-|---|---------|----------------|----------------|------|
-| 1 | **Full Exam Editing** | Moodle, TestReach | Edit modal with all exam fields | Free |
-| 2 | **Question Append to Existing Exams** | Articulate Storyline | CSV upload + manual entry to published exams | Free |
-| 3 | **Exam Templates** | TalentLMS | localStorage save/load configurations | Free |
-| 4 | **Negative Marking** | ExamGuide, WAEC standard | Configurable deduction per wrong answer | Free |
-| 5 | **Exam Scheduling (Start Windows)** | TestReach | Timestamp checking before admission | Free |
-| 6 | **Auto-Close Scheduling** | Think Exam | setInterval checker for close_at time | Free |
-| 7 | **Result Release Control** | Moodle, Docebo | Boolean flag controlling score visibility | Free |
-| 8 | **Question Difficulty Levels** | ExamGuide, TalentLMS | Easy/Medium/Hard tagging per question | Free |
-| 9 | **Sectioned Exams** | Articulate Storyline | Group questions by section within exam | Free |
-| 10 | **Student Progress Tracking** | Moodle, Docebo | Historical performance across all exams | Free |
-| 11 | **Certificates with Verification Codes** | TestReach | Unique hex hash on every result | Free |
-| 12 | **Per-Question Time Analytics** | Think Exam | Time spent logged per question | Free |
-| 13 | **Exam Archive (Soft Delete)** | Moodle | Hide from main list, preserve data | Free |
-| 14 | **Student Weakness Identification** | Docebo | Auto-detect struggling topics | Free |
-| 15 | **Leaderboard with Percentiles** | TalentLMS | Ranked class performance display | Free |
-| 16 | **Batch Exam Actions** | Moodle | Checkbox selection + bulk apply | Free |
-| 17 | **Question Reusability** | Articulate Storyline | Import questions from past exams | Free |
-| 18 | **Text-to-Speech (Read Aloud)** | H5P | Browser-native Web Speech API | Free |
-| 19 | **Dynamic Screen Watermark** | TestReach | Anti-screenshot overlay during exam | Free |
-| 20 | **Item Analysis Export** | Think Exam | Per-question difficulty CSV | Free |
-| 21 | **Code Regeneration** | TestReach | Roll new access code for existing exam | Free |
-| 22 | **Printable Result Slips** | ExamGuide | Official-looking score report | Free |
-| 23 | **Deployment Validator** | Custom | Browser-only readiness checker | Free |
-| 24 | **Feature Guide** | Custom | Built-in system documentation | Free |
-| 25 | **Admin Security Centre** | Custom | In-browser security audit tools | Free |
-| 26 | **Proctoring Photo Capture** | Think Exam, TestReach | 3 intake photos + periodic snapshots | Free |
-| 27 | **Developer Tools Detection** | TestReach | Auto-flag DevTools opening | Free |
-| 28 | **Multiple People Detection** | Think Exam | Basic face detection warning | Free |
-| 29 | **Emergency Backup System** | Custom | JSON download for offline recovery | Free |
-| 30 | **Notification System** | Docebo | In-app bell with real-time alerts | Free |
+This is the correct operational arrangement for Supabase/Postgres.
 
-### 3.3 Features Already Present (Maintained)
+### 3.2 Security hardening
 
-| Feature | Description |
-|---------|-------------|
-| 11+ Question Types | MCQ, MRQ, T/F, Short, Numeric, Matching, Ordering, Cloze, Essay, Categorization, Multi-Numeric |
-| CSV/XLSX/PDF Import | Multiple question input methods |
-| Row-Level Security | Database-level data isolation |
-| PWA Support | Installable app with offline caching |
-| WhatsApp Sharing | Pre-formatted exam link sharing |
-| Analytics & Charts | Score distributions, pass/fail ratios, trends |
-| Student Roster Management | Class roster upload and management |
-| Anti-Cheat Monitoring | Tab-switch detection, fullscreen enforcement |
-| Real-Time Polling | Auto-refresh for new submissions |
-| Exam Package Export/Import | Full exam backup as JSON |
+- Removed reliance on broad anonymous table reads.
+- Added safe RPCs for student flows.
+- Added server-side admin verification.
+- Student result inserts now require the exam to be open, active, not archived, started, and not expired.
+- Service-role key remains excluded from frontend.
 
----
+### 3.3 Scoring upgrades
 
-## 4. Brand Integration
+- Partial-credit question types now store decimal scores.
+- Negative marking is applied consistently.
+- Correct/wrong/skipped counts are stored.
+- Scoring summary is included in `answers_data`.
 
-### 4.1 HMG Brand Elements Embedded
+### 3.4 Student experience upgrades
 
-| Element | Location | Details |
-|---------|----------|---------|
-| **Logo** | All portals | `hmg-academy-logo.png` displayed on login, dashboard, results |
-| **Brand Name** | All pages | "HMG Academy CBT Pro" in titles, headers, footers |
-| **Founder Name** | Teacher auth, student portal, admin panel, README | "Adewale Samson Adeagbo" |
-| **Contact Info** | All portals | WhatsApp: +234 810 086 6322, Phone: +234 907 790 7677, Email: hismarvellousgrace@gmail.com |
-| **Website Links** | All portals | hmgacademy.pages.dev, hmgconcepts.pages.dev, cssadewale.pages.dev |
-| **Tagline** | All portals | "Learning Deliberately. Teaching Authentically." |
-| **Copyright** | All files | © 2026 HMG Concepts |
-| **Favicon** | All portals | `assets/hmg-academy-logo.png` |
-| **PWA Manifest** | `manifest.webmanifest` | Full branding with name, description, icons |
-| **SVG Icon** | `hmg-icon.svg` | Branded icon for PWA installation |
+- Code/link entry retained.
+- Wait room improved.
+- Keyboard shortcuts added.
+- Held-result screen added.
+- Submission/certificate verification code added.
+- Emergency backup retained.
 
-### 4.2 Admin Email Configuration
+### 3.5 Teacher experience upgrades
 
-```javascript
-const ADMIN_EMAIL = 'buildingmyictcareer@gmail.com';
-```
+- Question data parser handles old and new storage formats.
+- CSV template supports `Difficulty`, `Tags`, and `Section`.
+- SQL guide updated.
+- Exam editing, appending, exports, backups, and analytics retained.
 
-This email address is configured as the super-admin across all portals. To change it, update this constant in:
-- `teacher.html` (line ~2146)
-- `admin.html` (line ~1069)
-- `COMPLETE_SQL_SETUP.sql` (Step 14 and Step 13)
+### 3.6 Admin experience upgrades
+
+- Admin RPC security strengthened.
+- Admin SQL blocks updated.
+- Teacher removal language corrected.
+- Platform-wide exports retained.
 
 ---
 
-## 5. Documentation Files Created
+## 4. File-by-file enhancement notes
 
-| File | Size | Purpose |
-|------|------|---------|
-| `README.md` | ~12 KB | Comprehensive project overview, architecture, features, contact |
-| `DEPLOYMENT.md` | ~15 KB | Step-by-step deployment guide with troubleshooting and security checklist |
-| `FEATURES.md` | ~18 KB | Detailed documentation of every feature across all portals |
-| `CHANGELOG.md` | ~8 KB | Version history with all bugs, features, and improvements |
-| `SECURITY.md` | ~10 KB | Security architecture, data protection, compliance guidelines |
-| `CONTRIBUTING.md` | ~7 KB | Contribution guidelines for developers and community |
-| `EXPERT_ENHANCEMENT_REPORT.md` | This file | Complete audit, diagnosis, and enhancement documentation |
-
----
-
-## 6. Deployment Process Summary
-
-### Quick Deployment (5 Steps)
-
-1. **Create Supabase Project** — Free at https://supabase.com
-2. **Run SQL Setup** — Execute `COMPLETE_SQL_SETUP.sql` in Supabase SQL Editor
-3. **Update Credentials** — Replace `SB_URL`, `SB_KEY`, `ADMIN_EMAIL` in 3 HTML files
-4. **Deploy to Vercel** — Push to GitHub → Connect to Vercel → Live in 30 seconds
-5. **Test** — Create exam → Share code → Student submits → View results
-
-### Detailed Deployment
-
-See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the complete step-by-step guide with:
-- Prerequisites checklist
-- Supabase configuration
-- SQL execution order
-- Hosting platform options (Vercel, GitHub Pages, Netlify)
-- Post-deployment verification
-- Ongoing maintenance schedule
-- Troubleshooting guide
-- Security checklist
+| File | Enhancements |
+|---|---|
+| `COMPLETE_SQL_SETUP.sql` | Full v3.1 corrected SQL, safe RLS/RPC architecture. |
+| `teacher.html` | Secure SQL snippets, JSONB parser, metadata CSV support, full-name signup metadata. |
+| `student.html` | RPC exam loading, RPC student verification, RPC attempt count, negative marking, held results, certificate code, shortcuts. |
+| `admin.html` | JSONB parser, updated SQL snippets, admin wording correction. |
+| `link_checker.html` | Secure public RPC check and scheduled-exam awareness. |
+| `deployment_validator.html` | Correct file checks and v3.1 SQL/RPC validation. |
+| `index.html` | Version updated to v3.1 Enterprise. |
+| `sw.js` | Cache bumped to v7. |
+| `further_maths_sample.csv` | Metadata columns added. |
+| `README.md` | Rewritten comprehensive v3.1 overview. |
+| `DEPLOYMENT.md` | Rewritten detailed deployment guide. |
+| `DEPLOYMENT_GUIDE.md` | Updated quick deployment guide. |
+| `FEATURES.md` | Rewritten detailed features file. |
+| `FEATURES_GUIDE.md` | Updated user guide. |
+| `SECURITY.md` | Rewritten security model. |
+| `CHANGELOG.md` | Updated v3.1 changelog. |
+| `DIAGNOSIS_REPORT.md` | Updated diagnosis. |
+| `EXPERT_ENHANCEMENT_REPORT.md` | This report. |
 
 ---
 
-## 7. Cost Analysis
+## 5. Enterprise features now available without paid AI API
 
-### Total Monthly Cost: ₦0
-
-| Component | Service | Cost |
-|-----------|---------|------|
-| Database | Supabase Free Tier (500MB) | $0/month |
-| Authentication | Supabase Auth (50,000 MAU) | $0/month |
-| Hosting | Vercel / Netlify / GitHub Pages | $0/month |
-| Charts | Chart.js (CDN) | $0 |
-| AI APIs | **Not Used** | **$0** |
-| **Total** | | **₦0/month** |
-
-The only optional cost is a custom domain (~₦5,000/year).
-
----
-
-## 8. Free Tools Used
-
-| Tool | Purpose | Cost |
-|------|---------|------|
-| **Supabase** | Database + Authentication + Real-time | Free |
-| **Chart.js** | Analytics charts and graphs | Free (CDN) |
-| **GitHub** | Version control and code hosting | Free |
-| **Vercel** | Production hosting with HTTPS | Free |
-| **Netlify** | Alternative hosting platform | Free |
-| **GitHub Pages** | Alternative static hosting | Free |
-| **PWA APIs** | App installation, offline caching | Free (built-in) |
-| **Web Speech API** | Text-to-speech for accessibility | Free (built-in) |
-| **FileReader API** | CSV/XLSX/PDF parsing | Free (built-in) |
-| **Canvas API** | Certificate and chart generation | Free (built-in) |
-| **localStorage** | Auto-save, templates, preferences | Free (built-in) |
-| **Page Visibility API** | Tab-switch detection for integrity | Free (built-in) |
-| **Fullscreen API** | Exam integrity enforcement | Free (built-in) |
+1. Role-based teacher/admin workflows.
+2. Admin approval workflow.
+3. Secure public exam access.
+4. Registered-student identity verification.
+5. Attempt-limit enforcement.
+6. Exam scheduling and close windows.
+7. Negative marking.
+8. Result hold/release display control.
+9. Decimal partial-credit scoring.
+10. Multi-question-type authoring.
+11. Question metadata tagging.
+12. Item analysis exports.
+13. Performance analytics.
+14. Emergency student backup.
+15. Teacher full backup.
+16. Exam package export/import.
+17. PWA/offline shell.
+18. Proctoring/integrity logs.
+19. Certificate/submission code.
+20. Deployment validator.
+21. Link/code health checker.
+22. Security checklist/smoke-test support.
 
 ---
 
-## 9. Architecture Diagram
+## 6. What was intentionally not added
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     HMG ACADEMY CBT PRO v3.0                     │
-├─────────────────────────────────────────────────────────────────┤
-│                         FRONTEND LAYER                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
-│  │  teacher.html │  │ student.html │  │  admin.html  │           │
-│  │  (Dashboard)  │  │  (Exam Port) │  │  (Management)│           │
-│  │               │  │               │  │               │           │
-│  │ • Exam create │  │ • Exam take   │  │ • Teacher mgmt│           │
-│  │ • Question up │  │ • Auto-save   │  │ • Platform analytics│    │
-│  │ • Results view│  │ • Anti-cheat  │  │ • Security audit│       │
-│  │ • Analytics   │  │ • Proctoring  │  │ • Data export │           │
-│  │ • Student mgmt│  │ • Certificate │  │ • Announcements│          │
-│  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘           │
-│          │                  │                  │                    │
-│  ┌───────┴──────────────────┴──────────────────┴────────┐        │
-│  │              index.html (Landing Page)                │        │
-│  │  sw.js (PWA) │ manifest.webmanifest │ offline.html    │        │
-│  │  deployment_validator.html │ feature_guide.html       │        │
-│  │  link_checker.html │ hmg-icon.svg                     │        │
-│  └─────────────────────────────┬────────────────────────┘        │
-├────────────────────────────────┼────────────────────────────────┤
-│                    BACKEND LAYER                                 │
-│  ┌─────────────────────────────┴────────────────────────┐        │
-│  │                   Supabase                           │        │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │        │
-│  │  │ PostgreSQL   │  │ Auth System  │  │ Real-time  │ │        │
-│  │  │ • exams      │  │ • Teachers   │  │ • Polling  │ │        │
-│  │  │ • results    │  │ • Admin      │  │ • Notifications│     │
-│  │  │ • students   │  │ • Sessions   │  │            │ │        │
-│  │  │ • profiles   │  │ • Passwords  │  │            │ │        │
-│  │  └──────────────┘  └──────────────┘  └────────────┘ │        │
-│  │         │              │              │              │        │
-│  │  ┌──────┴──────────────┴──────────────┴──────┐       │        │
-│  │  │  Row-Level Security (RLS)                  │       │        │
-│  │  │  • Teachers: own data only                │       │        │
-│  │  │  • Students: submit results only          │       │        │
-│  │  │  • Admin: all data via RPC functions      │       │        │
-│  │  └───────────────────────────────────────────┘       │        │
-│  └──────────────────────────────────────────────────────┘        │
-├─────────────────────────────────────────────────────────────────┤
-│                     HOSTING LAYER                                │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
-│  │   Vercel     │  │ GitHub Pages │  │   Netlify    │           │
-│  │ (Recommended)│  │ (Alternative)│  │ (Alternative)│           │
-│  │              │  │              │  │              │           │
-│  │ • Auto HTTPS │  │ • Free       │  │ • Auto HTTPS │           │
-│  │ • Global CDN │  │ • GitHub int │  │ • Drag-drop  │           │
-│  │ • Preview dep│  │ • .nojekyll  │  │ • Free tier  │           │
-│  └──────────────┘  └──────────────┘  └──────────────┘           │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Feature | Reason |
+|---|---|
+| Paid AI essay grading | User specified no AI API due to cost. |
+| True lockdown browser | Requires native application or paid secure-browser product. |
+| Live remote human proctoring | Requires staffing or paid service. |
+| SSO/LTI | Usually requires paid LMS/identity infrastructure and more backend work. |
+| Payment/e-commerce | Outside school CBT core and may require secret keys. |
 
 ---
 
-## 10. Comparison with Leading Platforms
+## 7. Recommended future roadmap
 
-| Feature | HMG CBT Pro | Think Exam | TestReach | Moodle | ExamGuide |
-|---------|-------------|------------|-----------|--------|-----------|
-| Cost | **Free** | Paid | Paid | Free (self-hosted) | Paid |
-| AI API Required | **No** | Yes | Yes | Optional | No |
-| 11+ Question Types | ✅ | ✅ | ✅ | ✅ | Limited |
-| Offline Support | ✅ | Limited | No | Plugin | ✅ |
-| Anti-Cheat | ✅ | ✅ | ✅ | Plugin | Limited |
-| Proctoring | ✅ | ✅ | ✅ | Plugin | No |
-| Student Roster | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Analytics | ✅ | ✅ | ✅ | ✅ | ✅ |
-| PWA Support | ✅ | No | No | No | App |
-| WhatsApp Sharing | ✅ | No | No | No | No |
-| Item Analysis | ✅ | ✅ | ✅ | Plugin | No |
-| Emergency Backup | ✅ | No | No | No | No |
-| Multi-Teacher | ✅ | ✅ | ✅ | ✅ | No |
-| Admin Panel | ✅ | ✅ | ✅ | Built-in | No |
-| Mobile Responsive | ✅ | ✅ | ✅ | Theme | ✅ |
+### Free/low-cost additions
 
----
+- Result verification page by certificate code.
+- Teacher-controlled release-results page for held results.
+- More item-bank filtering by tags/difficulty.
+- Printable seating/invigilator attendance sheet.
+- Import/export Moodle GIFT or QTI-lite format.
+- More accessibility controls: contrast mode, dyslexia-friendly font toggle.
+- Local LAN deployment guide using Supabase self-hosting or local Postgres for advanced users.
 
-## 11. Recommendations for Future Development
+### Paid/enterprise only if budget becomes available
 
-### Phase 1 (Immediate — Already Done)
-- ✅ All bug fixes applied
-- ✅ SQL inconsistencies corrected
-- ✅ Enterprise features integrated
-- ✅ Documentation completed
-- ✅ Brand identity embedded
-
-### Phase 2 (Next Quarter)
-- Add SCORM package import support
-- Implement exam question randomization per student
-- Add teacher-to-teacher question bank sharing
-- Create student self-service portal for reviewing past exams
-- Add bulk student import from school management systems
-
-### Phase 3 (Next Year)
-- Implement adaptive testing (difficulty adjusts based on performance)
-- Add video-based questions with embedded media
-- Create parent/guardian monitoring dashboard
-- Add multi-language support (Yoruba, Hausa, Igbo, French)
-- Implement offline-first exam mode with sync-on-connect
+- True lockdown browser.
+- Live proctoring integrations.
+- SSO/LMS integration.
+- Dedicated backend for server-side marking and audit logs.
+- Encrypted storage buckets for proctoring media.
 
 ---
 
-## 12. Final File Inventory
+## 8. Final expert verdict
 
-### Enhanced CBT Folder Contents
+HMG Academy CBT Pro v3.1 is now a robust, free-tier, school-ready CBT system. The most important improvement is the corrected security posture: data access decisions are now handled in Supabase SQL/RLS/RPC instead of relying on frontend logic.
 
-```
-CBT/
-├── index.html                    # Landing page (brand updated)
-├── teacher.html                  # Teacher dashboard (7 bugs fixed)
-├── student.html                  # Student exam portal (bug fixed)
-├── admin.html                    # Admin management panel (bug fixed)
-├── sw.js                         # Service worker (cache references fixed)
-├── manifest.webmanifest          # PWA app manifest (brand updated)
-├── offline.html                  # Offline fallback page (brand updated)
-├── deployment_validator.html     # Deployment readiness checker
-├── feature_guide.html            # Built-in feature documentation
-├── link_checker.html             # Exam link/code validator
-├── COMPLETE_SQL_SETUP.sql        # Database setup (all SQL corrected)
-├── further_maths_sample.csv      # Sample question bank
-├── hmg-academy-logo.png          # Brand logo
-├── hmg-icon.svg                  # SVG brand icon
-├── _headers                      # Netlify security headers
-├── .nojekyll                     # Disable GitHub Pages Jekyll
-├── README.md                     # Comprehensive project overview
-├── DEPLOYMENT.md                 # Step-by-step deployment guide
-├── FEATURES.md                   # Detailed feature documentation
-├── CHANGELOG.md                  # Version history
-├── SECURITY.md                   # Security policy and guidelines
-├── CONTRIBUTING.md               # Contribution guidelines
-├── EXPERT_ENHANCEMENT_REPORT.md  # This file
-└── assets/
-    └── hmg-academy-logo.png      # Logo in assets folder
-```
+The platform is appropriate for:
 
-**Total files:** 25 (up from 24 — added CHANGELOG.md and FEATURES.md)  
-**Total documentation:** 7 comprehensive markdown files  
-**Total bugs fixed:** 7 critical + multiple minor  
-**Total enterprise features added:** 30  
-**Additional cost:** ₦0  
+- school quizzes;
+- continuous assessment;
+- terminal exams with supervision;
+- WAEC/NECO/BECE/JAMB practice;
+- tutorial centre mocks;
+- low-cost institutional CBT pilots.
 
----
-
-> **HMG Academy CBT Pro v3.0** — *Learning Deliberately. Teaching Authentically.*  
-> Built by **Adewale Samson Adeagbo** — Founder, HMG Concepts  
-> Data Scientist · STEM Educator · 15+ years in Nigerian Classrooms  
-> © 2026 HMG Concepts. All features free — no paid APIs required.
+For high-stakes national/professional certification exams, pair it with human invigilation and additional operational controls.

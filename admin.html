@@ -538,19 +538,26 @@ tbody tr:hover td{background:var(--surface-hover);}
             <br>• <strong>close_at</strong> — optional scheduled auto-close date and time.
             <br>• <strong>is_open</strong> — controls whether students can currently access the exam.
           </p>
-          <div class="sql-block" id="sql-step1">CREATE TABLE IF NOT EXISTS exams (
-  id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  teacher_id    uuid        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  subject       text        NOT NULL,
-  duration      integer     NOT NULL,
-  attempt_limit integer     DEFAULT 1,
-  select_count  integer     DEFAULT 0,
-  code          text        UNIQUE NOT NULL,
-  csv_data      jsonb       NOT NULL,
-  is_open       boolean     DEFAULT false,
-  exam_mode     text        DEFAULT 'open',
-  close_at      timestamptz,
-  created_at    timestamptz DEFAULT now()
+          <div class="sql-block" id="sql-step1">CREATE TABLE IF NOT EXISTS public.exams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  code TEXT UNIQUE NOT NULL,
+  subject TEXT NOT NULL,
+  duration INTEGER NOT NULL DEFAULT 45,
+  attempt_limit INTEGER NOT NULL DEFAULT 1,
+  select_count INTEGER NOT NULL DEFAULT 0,
+  is_open BOOLEAN NOT NULL DEFAULT false,
+  exam_mode TEXT NOT NULL DEFAULT 'open',
+  negative_mark NUMERIC NOT NULL DEFAULT 0,
+  release_results BOOLEAN NOT NULL DEFAULT true,
+  instructions TEXT NOT NULL DEFAULT '',
+  is_archived BOOLEAN NOT NULL DEFAULT false,
+  cert_code TEXT NOT NULL DEFAULT '',
+  start_at TIMESTAMPTZ,
+  close_at TIMESTAMPTZ,
+  csv_data JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step1')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
@@ -566,25 +573,26 @@ tbody tr:hover td{background:var(--surface-hover);}
             <br>• <strong>answers_data</strong> — JSON storing each question's answer, time spent, and flag status.
             <br>• <strong>violations</strong> and <strong>violation_log</strong> — anti-cheat integrity data recorded during the exam.
           </p>
-          <div class="sql-block" id="sql-step2">CREATE TABLE IF NOT EXISTS results (
-  id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  exam_id         uuid        REFERENCES exams(id) ON DELETE CASCADE NOT NULL,
-  student_name    text        NOT NULL,
-  student_class   text        NOT NULL,
-  student_id_ref  text,
-  student_type    text        DEFAULT 'open',
-  score           integer     NOT NULL,
-  total           integer     NOT NULL,
-  correct_count   integer     DEFAULT NULL,
-  wrong_count     integer     DEFAULT NULL,
-  skipped_count   integer     DEFAULT NULL,
-  attempt_number  integer     DEFAULT 1,
-  time_taken      integer     DEFAULT 0,
-  answers_data    jsonb,
-  violations      integer     DEFAULT 0,
-  violation_log   jsonb,
-  proctor_data    jsonb,
-  created_at      timestamptz DEFAULT now()
+          <div class="sql-block" id="sql-step2">CREATE TABLE IF NOT EXISTS public.results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID NOT NULL REFERENCES public.exams(id) ON DELETE CASCADE,
+  student_name TEXT NOT NULL,
+  student_class TEXT NOT NULL DEFAULT '',
+  student_id_ref TEXT DEFAULT '',
+  student_type TEXT DEFAULT 'open',
+  score NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total INTEGER NOT NULL DEFAULT 0,
+  correct_count INTEGER DEFAULT NULL,
+  wrong_count INTEGER DEFAULT NULL,
+  skipped_count INTEGER DEFAULT NULL,
+  attempt_number INTEGER DEFAULT 1,
+  time_taken INTEGER DEFAULT 0,
+  answers_data JSONB,
+  violations INTEGER DEFAULT 0,
+  violation_log JSONB DEFAULT '[]'::jsonb,
+  proctor_data JSONB,
+  cert_code TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step2')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
@@ -599,14 +607,15 @@ tbody tr:hover td{background:var(--surface-hover);}
             <br>When a teacher signs up, the trigger in Step 11 automatically creates a pending row here.
             The admin must approve from the Pending Approvals page before the teacher can access the dashboard.
           </p>
-          <div class="sql-block" id="sql-step3">CREATE TABLE IF NOT EXISTS profiles (
-  id          uuid        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email       text        UNIQUE NOT NULL,
-  full_name   text,
-  is_admin    boolean     NOT NULL DEFAULT false,
-  status      text        NOT NULL DEFAULT 'pending',
-  created_at  timestamptz DEFAULT now(),
-  updated_at  timestamptz DEFAULT now()
+          <div class="sql-block" id="sql-step3">CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  full_name TEXT DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'teacher',
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step3')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
@@ -620,14 +629,15 @@ tbody tr:hover td{background:var(--surface-hover);}
             <br>• <strong>UNIQUE (teacher_id, student_id)</strong> — prevents duplicate student IDs within the same teacher's roster.
             <br>Students are not Supabase users — they are just records that the teacher manages.
           </p>
-          <div class="sql-block" id="sql-step4">CREATE TABLE IF NOT EXISTS students (
-  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  teacher_id  uuid        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  full_name   text        NOT NULL,
-  student_id  text        NOT NULL,
-  class       text        NOT NULL,
-  created_at  timestamptz DEFAULT now(),
-  UNIQUE (teacher_id, student_id)
+          <div class="sql-block" id="sql-step4">-- Registered-student roster table and secure teacher/admin policies.
+CREATE TABLE IF NOT EXISTS public.students (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name   TEXT NOT NULL,
+  student_id  TEXT NOT NULL,
+  class       TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(teacher_id, student_id)
 );</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step4')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
@@ -640,11 +650,11 @@ tbody tr:hover td{background:var(--surface-hover);}
             <br><strong>This is the most important step.</strong> Without it, every teacher sees every other teacher's exams, results, and students.
             <br>Run this block to enable RLS on all four tables at once.
           </p>
-          <div class="sql-block" id="sql-step5">-- Enable RLS on all four tables
-ALTER TABLE exams    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE results  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE students ENABLE ROW LEVEL SECURITY;</div>
+          <div class="sql-block" id="sql-step5">-- Enable RLS on every application table
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exams    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.results  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step5')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -655,21 +665,43 @@ ALTER TABLE students ENABLE ROW LEVEL SECURITY;</div>
             These four policies enforce that each teacher can only read, create, edit, and delete their own exams.
             <br>The condition <code>auth.uid() = teacher_id</code> means Supabase checks that the logged-in teacher's user ID matches the exam's teacher_id column on every single request — automatically, without any JavaScript needed.
           </p>
-          <div class="sql-block" id="sql-step6">-- Teachers can only read their own exams
+          <div class="sql-block" id="sql-step6">-- Helper required before any admin-aware policy below.
+CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE((
+    SELECT (p.is_admin=true OR p.role='admin') AND p.status='active'
+    FROM public.profiles p WHERE p.id=auth.uid() LIMIT 1
+  ), false)
+  OR lower(COALESCE(auth.jwt()-&gt;&gt;'email','')) = lower('buildingmyictcareer@gmail.com');
+$$;
+
+-- Exams: teachers manage their own exams; platform admins can supervise all.
+-- Students load exams through get_public_exam_by_code(), not broad anonymous SELECT.
+DROP POLICY IF EXISTS "Students can read exams by code" ON public.exams;
+DROP POLICY IF EXISTS "Teachers select own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers insert own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers update own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers delete own exams" ON public.exams;
+
 CREATE POLICY "Teachers select own exams"
-ON exams FOR SELECT USING (auth.uid() = teacher_id);
+ON public.exams FOR SELECT TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());
 
--- Teachers can only create exams linked to their own ID
 CREATE POLICY "Teachers insert own exams"
-ON exams FOR INSERT WITH CHECK (auth.uid() = teacher_id);
+ON public.exams FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
 
--- Teachers can only edit their own exams
 CREATE POLICY "Teachers update own exams"
-ON exams FOR UPDATE USING (auth.uid() = teacher_id);
+ON public.exams FOR UPDATE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
 
--- Teachers can only delete their own exams
 CREATE POLICY "Teachers delete own exams"
-ON exams FOR DELETE USING (auth.uid() = teacher_id);</div>
+ON public.exams FOR DELETE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step6')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -679,32 +711,56 @@ ON exams FOR DELETE USING (auth.uid() = teacher_id);</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
             A result belongs to a teacher if it was submitted to an exam that teacher created.
             The sub-query <code>(SELECT teacher_id FROM exams WHERE id = exam_id)</code> traces from the result back to its exam to find the owner.
-            <br>The student INSERT policy uses <code>WITH CHECK (true)</code> so anonymous students (who are not logged in) can still submit their results — this is essential for the exam to function.
+            <br>The student INSERT policy uses <code>public.is_exam_open_for_submission(exam_id)</code>, so anonymous students can submit only to an open, active, non-expired exam. This prevents submissions to closed or archived exams.
           </p>
-          <div class="sql-block" id="sql-step7">-- Teachers can read results from their own exams only
+          <div class="sql-block" id="sql-step7">-- Results: create helper functions BEFORE policies, then create safe policies.
+CREATE OR REPLACE FUNCTION public.get_exam_teacher_id(p_exam_id UUID)
+RETURNS UUID
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$ SELECT teacher_id FROM public.exams WHERE id = p_exam_id LIMIT 1; $$;
+
+CREATE OR REPLACE FUNCTION public.is_exam_open_for_submission(p_exam_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.exams e
+    WHERE e.id = p_exam_id
+      AND e.is_archived = false
+      AND e.is_open = true
+      AND (e.start_at IS NULL OR e.start_at &lt;= NOW())
+      AND (e.close_at IS NULL OR e.close_at &gt; NOW())
+  );
+$$;
+
+DROP POLICY IF EXISTS "Teachers select own results" ON public.results;
+DROP POLICY IF EXISTS "Students can submit results" ON public.results;
+DROP POLICY IF EXISTS "Teachers insert own results" ON public.results;
+DROP POLICY IF EXISTS "Teachers update own results" ON public.results;
+DROP POLICY IF EXISTS "Teachers delete own results" ON public.results;
+
 CREATE POLICY "Teachers select own results"
-ON results FOR SELECT
-USING (
-  auth.uid() = (SELECT teacher_id FROM exams WHERE id = exam_id)
-);
+ON public.results FOR SELECT TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
 
--- Anyone (students with no login) can submit exam results
 CREATE POLICY "Students can submit results"
-ON results FOR INSERT WITH CHECK (true);
+ON public.results FOR INSERT TO anon
+WITH CHECK (public.is_exam_open_for_submission(exam_id));
 
--- Teachers can update results from their own exams
+CREATE POLICY "Teachers insert own results"
+ON public.results FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
+
 CREATE POLICY "Teachers update own results"
-ON results FOR UPDATE
-USING (
-  auth.uid() = (SELECT teacher_id FROM exams WHERE id = exam_id)
-);
+ON public.results FOR UPDATE TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin())
+WITH CHECK (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
 
--- Teachers can delete results from their own exams
 CREATE POLICY "Teachers delete own results"
-ON results FOR DELETE
-USING (
-  auth.uid() = (SELECT teacher_id FROM exams WHERE id = exam_id)
-);</div>
+ON public.results FOR DELETE TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step7')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -716,17 +772,32 @@ USING (
             The INSERT policy is open so the auto-signup trigger (Step 11) can create profile rows during signup.
             Admins read ALL profiles through the special RPC functions in Step 12 — not through these policies.
           </p>
-          <div class="sql-block" id="sql-step8">-- Each teacher can only see their own profile
-CREATE POLICY "Users read own profile"
-ON profiles FOR SELECT USING (auth.uid() = id);
+          <div class="sql-block" id="sql-step8">CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE((
+    SELECT (p.is_admin=true OR p.role='admin') AND p.status='active'
+    FROM public.profiles p WHERE p.id=auth.uid() LIMIT 1
+  ), false)
+  OR lower(COALESCE(auth.jwt()-&gt;&gt;'email','')) = lower('buildingmyictcareer@gmail.com');
+$$;
 
--- The signup trigger needs to be able to insert profiles
-CREATE POLICY "Allow profile insert"
-ON profiles FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Users read own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow profile insert" ON public.profiles;
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins manage all profiles" ON public.profiles;
 
--- Teachers can update only their own profile
-CREATE POLICY "Users update own profile"
-ON profiles FOR UPDATE USING (auth.uid() = id);</div>
+CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT TO authenticated
+USING (auth.uid() = id OR public.is_platform_admin());
+CREATE POLICY "Allow profile insert" ON public.profiles FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = id OR public.is_platform_admin());
+CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE TO authenticated
+USING (auth.uid() = id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = id OR public.is_platform_admin());
+CREATE POLICY "Admins manage all profiles" ON public.profiles FOR DELETE TO authenticated
+USING (public.is_platform_admin());</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step8')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -735,23 +806,38 @@ ON profiles FOR UPDATE USING (auth.uid() = id);</div>
           <div class="settings-block-title" style="color:var(--info);font-size:14px;">Step 9 — RLS Policies for the Students Table</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
             Each teacher can only read, add, and delete students from their own roster.
-            The last policy allows anonymous users (students sitting a registered-mode exam) to look up their student ID for identity verification — without this, registered-mode exams cannot work.
+            Registered-mode student ID checks now use the secure <code>verify_student_for_exam()</code> RPC. Do not create a broad anonymous roster SELECT policy; otherwise students could enumerate the whole class list.
           </p>
-          <div class="sql-block" id="sql-step9">-- Teachers can read their own students
+          <div class="sql-block" id="sql-step9">-- Registered-student roster table and secure teacher/admin policies.
+CREATE TABLE IF NOT EXISTS public.students (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name   TEXT NOT NULL,
+  student_id  TEXT NOT NULL,
+  class       TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(teacher_id, student_id)
+);
+
+DROP POLICY IF EXISTS "Anyone can verify student ID" ON public.students;
+DROP POLICY IF EXISTS "Teachers select own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers insert own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers update own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers delete own students" ON public.students;
+
 CREATE POLICY "Teachers select own students"
-ON students FOR SELECT USING (auth.uid() = teacher_id);
-
--- Teachers can add students to their own roster
+ON public.students FOR SELECT TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());
 CREATE POLICY "Teachers insert own students"
-ON students FOR INSERT WITH CHECK (auth.uid() = teacher_id);
-
--- Teachers can remove students from their own roster
+ON public.students FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
+CREATE POLICY "Teachers update own students"
+ON public.students FOR UPDATE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
 CREATE POLICY "Teachers delete own students"
-ON students FOR DELETE USING (auth.uid() = teacher_id);
-
--- Anonymous students can verify their ID during exam entry
-CREATE POLICY "Anyone can verify student ID"
-ON students FOR SELECT USING (true);</div>
+ON public.students FOR DELETE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step9')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -763,16 +849,12 @@ ON students FOR SELECT USING (true);</div>
             Without this, the auto-signup trigger in Step 11 will fail with a "database error" when a new teacher tries to create an account — even though the trigger is correctly written.
             <br><strong>This step is why signups were failing.</strong> Run this before creating the trigger.
           </p>
-          <div class="sql-block" id="sql-step10">-- Grant full access so the trigger can always write profiles
-GRANT ALL ON public.profiles TO postgres;
-GRANT ALL ON public.profiles TO service_role;
-
--- Also drop any old broken policy that may conflict
-DROP POLICY IF EXISTS "Allow profile insert" ON public.profiles;
-
--- Recreate the insert policy cleanly
-CREATE POLICY "Allow profile insert"
-ON public.profiles FOR INSERT WITH CHECK (true);</div>
+          <div class="sql-block" id="sql-step10">GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, INSERT ON public.results TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.exams TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.results TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.students TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step10')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -788,39 +870,35 @@ ON public.profiles FOR INSERT WITH CHECK (true);</div>
             <br>• <code>EXCEPTION WHEN others</code> — if the profile insert fails for any reason, the signup still succeeds. The teacher gets a pending profile on their first login attempt instead.
             <br>• <code>SECURITY DEFINER</code> — the function runs with the privileges of its creator (postgres), not the signing-up user.
           </p>
-          <div class="sql-block" id="sql-step11">-- First: drop any old version of the trigger and function
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+          <div class="sql-block" id="sql-step11">DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user();
 
--- Create the corrected trigger function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
+RETURNS TRIGGER
+LANGUAGE PLPGSQL SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, is_admin, status)
+  INSERT INTO public.profiles (id, email, full_name, role, is_admin, status)
   VALUES (
     NEW.id,
     NEW.email,
-    false,
-    'pending'
+    COALESCE(NEW.raw_user_meta_data-&gt;&gt;'full_name', NEW.raw_user_meta_data-&gt;&gt;'display_name', split_part(NEW.email,'@',1)),
+    CASE WHEN lower(NEW.email)=lower('buildingmyictcareer@gmail.com') THEN 'admin' ELSE 'teacher' END,
+    CASE WHEN lower(NEW.email)=lower('buildingmyictcareer@gmail.com') THEN true ELSE false END,
+    CASE WHEN lower(NEW.email)=lower('buildingmyictcareer@gmail.com') THEN 'active' ELSE 'pending' END
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
-EXCEPTION
-  WHEN others THEN
-    -- If insert fails for any reason, still allow the signup to complete
-    RAISE WARNING 'handle_new_user failed: %', SQLERRM;
-    RETURN NEW;
+EXCEPTION WHEN others THEN
+  RAISE WARNING 'handle_new_user failed: %', SQLERRM;
+  RETURN NEW;
 END;
 $$;
 
--- Attach the trigger to fire after every new user signup
 CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();</div>
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step11')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -834,68 +912,246 @@ CREATE TRIGGER on_auth_user_created
             <br>• The SELECT functions let the admin read everything. The UPDATE/DELETE functions let the admin approve, suspend, promote, or remove teachers.
             <br>Run the entire block as a single query.
           </p>
-          <div class="sql-block" id="sql-step12">-- Admin reads ALL profiles across all teachers
-CREATE OR REPLACE FUNCTION admin_get_all_profiles()
-RETURNS SETOF profiles
-LANGUAGE sql SECURITY DEFINER
-AS $$ SELECT * FROM profiles ORDER BY created_at DESC; $$;
+          <div class="sql-block" id="sql-step12">-- STEP 10: ADMIN RPC FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════════
 
--- Admin reads ALL exams across all teachers
-CREATE OR REPLACE FUNCTION admin_get_all_exams()
-RETURNS SETOF exams
-LANGUAGE sql SECURITY DEFINER
-AS $$ SELECT * FROM exams ORDER BY created_at DESC; $$;
+DROP FUNCTION IF EXISTS public.admin_get_all_profiles() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_all_exams() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_all_results() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_set_profile_status(UUID, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.admin_set_profile_role(UUID, TEXT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.admin_delete_profile(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_platform_stats() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_exam_results(UUID) CASCADE;
 
--- Admin reads ALL results with exam metadata joined
-CREATE OR REPLACE FUNCTION admin_get_all_results()
+CREATE OR REPLACE FUNCTION public.admin_get_all_profiles()
+RETURNS SETOF public.profiles
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+  RETURN QUERY SELECT * FROM public.profiles ORDER BY created_at DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_all_exams()
+RETURNS SETOF public.exams
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+  RETURN QUERY SELECT * FROM public.exams ORDER BY created_at DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_all_results()
 RETURNS TABLE (
-  id uuid, exam_id uuid, student_name text, student_class text,
-  student_id_ref text, student_type text, score int, total int,
-  correct_count int, wrong_count int, skipped_count int,
-  attempt_number int, time_taken int, answers_data jsonb,
-  violations int, violation_log jsonb, created_at timestamptz,
-  exams jsonb
+  id              UUID,
+  exam_id         UUID,
+  student_name    TEXT,
+  student_class   TEXT,
+  student_id_ref  TEXT,
+  student_type    TEXT,
+  score           NUMERIC,
+  total           INTEGER,
+  correct_count   INTEGER,
+  wrong_count     INTEGER,
+  skipped_count   INTEGER,
+  attempt_number  INTEGER,
+  time_taken      INTEGER,
+  answers_data    JSONB,
+  violations      INTEGER,
+  violation_log   JSONB,
+  proctor_data    JSONB,
+  cert_code       TEXT,
+  created_at      TIMESTAMPTZ,
+  exams           JSONB
 )
-LANGUAGE sql SECURITY DEFINER
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
 AS $$
-  SELECT r.id, r.exam_id, r.student_name, r.student_class,
-         r.student_id_ref, r.student_type, r.score, r.total,
-         r.correct_count, r.wrong_count, r.skipped_count,
-         r.attempt_number, r.time_taken, r.answers_data,
-         r.violations, r.violation_log, r.created_at,
-         jsonb_build_object(
-           'subject',    e.subject,
-           'teacher_id', e.teacher_id
-         ) AS exams
-  FROM results r
-  LEFT JOIN exams e ON e.id = r.exam_id
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    r.id, r.exam_id, r.student_name, r.student_class,
+    r.student_id_ref, r.student_type, r.score, r.total,
+    r.correct_count, r.wrong_count, r.skipped_count,
+    r.attempt_number, r.time_taken, r.answers_data,
+    r.violations, r.violation_log, r.proctor_data,
+    r.cert_code, r.created_at,
+    jsonb_build_object(
+      'subject',    e.subject,
+      'teacher_id', e.teacher_id,
+      'code',       e.code
+    ) AS exams
+  FROM public.results r
+  LEFT JOIN public.exams e ON e.id = r.exam_id
   ORDER BY r.created_at DESC;
+END;
 $$;
 
--- Admin approves, deactivates, or reactivates a teacher
-CREATE OR REPLACE FUNCTION admin_set_profile_status(p_id uuid, p_status text)
-RETURNS void LANGUAGE sql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.admin_set_profile_status(p_id UUID, p_status TEXT)
+RETURNS VOID
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
-  UPDATE profiles
-  SET status = p_status, updated_at = now()
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  IF p_status NOT IN ('pending', 'active', 'inactive', 'rejected') THEN
+    RAISE EXCEPTION 'Invalid status: %', p_status;
+  END IF;
+
+  UPDATE public.profiles
+  SET status = p_status, updated_at = NOW()
   WHERE id = p_id;
+END;
 $$;
 
--- Admin promotes a teacher to admin role
-CREATE OR REPLACE FUNCTION admin_set_profile_role(p_id uuid, p_role text, p_status text)
-RETURNS void LANGUAGE sql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.admin_set_profile_role(p_id UUID, p_role TEXT, p_status TEXT)
+RETURNS VOID
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
-  UPDATE profiles
-  SET is_admin = (p_role = 'admin'),
-      status   = p_status
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  IF p_role NOT IN ('teacher', 'admin') THEN
+    RAISE EXCEPTION 'Invalid role: %', p_role;
+  END IF;
+
+  IF p_status NOT IN ('pending', 'active', 'inactive', 'rejected') THEN
+    RAISE EXCEPTION 'Invalid status: %', p_status;
+  END IF;
+
+  UPDATE public.profiles
+  SET is_admin  = (p_role = 'admin'),
+      role      = p_role,
+      status    = p_status,
+      updated_at = NOW()
   WHERE id = p_id;
+END;
 $$;
 
--- Admin deletes a rejected teacher profile
-CREATE OR REPLACE FUNCTION admin_delete_profile(p_id uuid)
-RETURNS void LANGUAGE sql SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.admin_delete_profile(p_id UUID)
+RETURNS VOID
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
-  DELETE FROM profiles WHERE id = p_id;
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  DELETE FROM public.profiles WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_platform_stats()
+RETURNS TABLE (
+  total_teachers   BIGINT,
+  active_teachers  BIGINT,
+  pending_teachers BIGINT,
+  total_exams      BIGINT,
+  live_exams       BIGINT,
+  total_results    BIGINT,
+  total_students   BIGINT,
+  avg_score        NUMERIC,
+  pass_rate        NUMERIC
+)
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    (SELECT COUNT(*) FROM public.profiles WHERE role IN ('teacher', 'admin')) AS total_teachers,
+    (SELECT COUNT(*) FROM public.profiles WHERE status = 'active') AS active_teachers,
+    (SELECT COUNT(*) FROM public.profiles WHERE status = 'pending') AS pending_teachers,
+    (SELECT COUNT(*) FROM public.exams) AS total_exams,
+    (SELECT COUNT(*) FROM public.exams WHERE is_open = true AND is_archived = false) AS live_exams,
+    (SELECT COUNT(*) FROM public.results) AS total_results,
+    (SELECT COUNT(*) FROM public.students) AS total_students,
+    COALESCE((SELECT ROUND(AVG((score / NULLIF(total, 0)) * 100), 2) FROM public.results WHERE total &gt; 0), 0) AS avg_score,
+    COALESCE((
+      SELECT ROUND(
+        (COUNT(*) FILTER (WHERE (score / NULLIF(total, 0)) * 100 &gt;= 50)::NUMERIC /
+         NULLIF(COUNT(*), 0) * 100, 2)
+      FROM public.results WHERE total &gt; 0
+    ), 0) AS pass_rate;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_exam_results(p_exam_id UUID)
+RETURNS TABLE (
+  id              UUID,
+  exam_id         UUID,
+  student_name    TEXT,
+  student_class   TEXT,
+  student_id_ref  TEXT,
+  student_type    TEXT,
+  score           NUMERIC,
+  total           INTEGER,
+  correct_count   INTEGER,
+  wrong_count     INTEGER,
+  skipped_count   INTEGER,
+  attempt_number  INTEGER,
+  time_taken      INTEGER,
+  answers_data    JSONB,
+  violations      INTEGER,
+  violation_log   JSONB,
+  created_at      TIMESTAMPTZ
+)
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    r.id, r.exam_id, r.student_name, r.student_class,
+    r.student_id_ref, r.student_type, r.score, r.total,
+    r.correct_count, r.wrong_count, r.skipped_count,
+    r.attempt_number, r.time_taken, r.answers_data,
+    r.violations, r.violation_log, r.created_at
+  FROM public.results r
+  WHERE r.exam_id = p_exam_id
+  ORDER BY r.created_at DESC;
+END;
 $$;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step12')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
@@ -909,9 +1165,12 @@ $$;</div>
             Re-computing from the current question bank can give wrong results if questions were edited after students submitted.
             <br><strong>Run this if your teacher dashboard shows different wrong counts than students see on their result screen.</strong>
           </p>
-          <div class="sql-block" id="sql-step8b">ALTER TABLE results ADD COLUMN IF NOT EXISTS correct_count  integer DEFAULT NULL;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS wrong_count    integer DEFAULT NULL;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS skipped_count  integer DEFAULT NULL;</div>
+          <div class="sql-block" id="sql-step8b">-- Accurate result columns for objective + partial-credit scoring.
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS correct_count  INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS wrong_count    INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS skipped_count  INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS attempt_number INTEGER DEFAULT 1;
+ALTER TABLE public.results ALTER COLUMN score TYPE NUMERIC(10,2) USING score::NUMERIC;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step8b')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -924,22 +1183,17 @@ ALTER TABLE results ADD COLUMN IF NOT EXISTS skipped_count  integer DEFAULT NULL
             Run this SQL once to create active profile rows for all existing auth users.
             <br><strong>Before running:</strong> change <code>buildingmyictcareer@gmail.com</code> to your actual admin email address — that account will be set to admin role, everyone else becomes an active teacher.
           </p>
-          <div class="sql-block" id="sql-step13">-- Creates active profiles for all existing auth users who don't have a profile row yet.
--- IMPORTANT: Replace the email below with YOUR actual admin email address.
--- That account gets is_admin=true. Everyone else becomes an active teacher (is_admin=false).
-INSERT INTO profiles (id, email, status, is_admin)
+          <div class="sql-block" id="sql-step13">-- Migrate existing Auth users into profiles. Change the admin email if needed.
+INSERT INTO public.profiles (id, email, full_name, role, is_admin, status)
 SELECT
   u.id,
   u.email,
-  'active',
-  CASE
-    WHEN u.email = 'buildingmyictcareer@gmail.com' THEN true
-    ELSE false
-  END
+  COALESCE(u.raw_user_meta_data-&gt;&gt;'full_name', u.raw_user_meta_data-&gt;&gt;'display_name', split_part(u.email, '@', 1)),
+  CASE WHEN lower(u.email) = lower('buildingmyictcareer@gmail.com') THEN 'admin' ELSE 'teacher' END,
+  CASE WHEN lower(u.email) = lower('buildingmyictcareer@gmail.com') THEN true ELSE false END,
+  'active'
 FROM auth.users u
-WHERE NOT EXISTS (
-  SELECT 1 FROM profiles p WHERE p.id = u.id
-)
+WHERE NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = u.id)
 ON CONFLICT (id) DO NOTHING;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step13')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
@@ -952,19 +1206,18 @@ ON CONFLICT (id) DO NOTHING;</div>
             <br><strong>How to get your UUID:</strong> Go to <strong>Supabase Dashboard → Authentication → Users</strong>, find your admin email in the list, and copy the UUID shown next to it.
             <br>Paste your UUID in place of <code>YOUR-UUID-HERE</code> below, update the email, then run the query.
           </p>
-          <div class="sql-block" id="sql-step14">-- Replace YOUR-UUID-HERE with your UUID from Supabase Auth → Users
--- Replace the email with your actual admin email
--- This upserts your admin profile row with is_admin=true and status=active
-INSERT INTO profiles (id, email, status, is_admin)
+          <div class="sql-block" id="sql-step14">-- Replace YOUR-UUID-HERE with your UUID from Supabase Auth → Users.
+INSERT INTO public.profiles (id, email, full_name, role, is_admin, status)
 VALUES (
   'YOUR-UUID-HERE',
   'buildingmyictcareer@gmail.com',
-  'active',
-  true
+  'Adewale Samson Adeagbo',
+  'admin',
+  true,
+  'active'
 )
 ON CONFLICT (id) DO UPDATE
-  SET is_admin = true,
-      status   = 'active';</div>
+  SET role='admin', is_admin=true, status='active', updated_at=NOW();</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step14')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -995,24 +1248,22 @@ ON CONFLICT (id) DO UPDATE
             <br>• The second query shows all profiles with their roles and statuses.
             <br>• The third query confirms the trigger is attached.
           </p>
-          <div class="sql-block" id="sql-step16">-- 1. Check all tables exist and RLS is enabled on each
+          <div class="sql-block" id="sql-step16">-- Verification checks
 SELECT tablename, rowsecurity
 FROM pg_tables
-WHERE schemaname = 'public'
-  AND tablename IN ('exams', 'results', 'profiles', 'students')
+WHERE schemaname='public' AND tablename IN ('profiles','exams','results','students')
 ORDER BY tablename;
--- Expected: 4 rows, all with rowsecurity = true
 
--- 2. Check all profiles (shows teachers and their approval status)
-SELECT id, email, is_admin, status, created_at
-FROM profiles
-ORDER BY created_at DESC;
+SELECT tablename, policyname, cmd, roles
+FROM pg_policies
+WHERE schemaname='public'
+ORDER BY tablename, policyname;
 
--- 3. Confirm the signup trigger is attached
-SELECT trigger_name, event_object_table, action_timing
-FROM information_schema.triggers
-WHERE trigger_name = 'on_auth_user_created';
--- Expected: 1 row showing trigger on auth.users</div>
+SELECT routine_name
+FROM information_schema.routines
+WHERE routine_schema='public'
+  AND routine_name IN ('get_public_exam_by_code','verify_student_for_exam','get_exam_attempt_count','is_platform_admin')
+ORDER BY routine_name;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql-step16')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -1104,6 +1355,16 @@ function decodeMeta(r){
   if(!r||!r.includes('|'))return{subject:r||'—',cls:'—',term:'—',topic:'—',type:'—',session:'—',passmark:50};
   const p=r.split('|');
   return{subject:p[0]||'—',cls:p[1]||'—',term:p[2]||'—',topic:p[3]||'—',type:p[4]||'—',session:p[5]||'—',passmark:parseInt(p[6])||50};
+}
+
+function parseQuestionData(raw){
+  if(Array.isArray(raw))return raw;
+  if(!raw)return [];
+  try{
+    let parsed=typeof raw==='string'?JSON.parse(raw):raw;
+    if(typeof parsed==='string')parsed=JSON.parse(parsed);
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return [];}
 }
 
 async function sbFetch(path,method='GET',body=null,useServiceKey=false){
@@ -1486,7 +1747,7 @@ async function approveTeacher(id){
 
 async function rejectTeacher(id){
   const prof=allProfiles.find(p=>p.id===id);
-  if(!confirm(`Reject and delete account for "${prof?.email}"?\n\nThis will permanently delete their Supabase auth account.`))return;
+  if(!confirm(`Reject and remove platform profile for "${prof?.email}"?\n\nThis removes their CBT platform profile. If you also want to delete their Supabase Auth login, do that manually in Supabase Dashboard → Authentication → Users.`))return;
   try{
     await sbFetch('/rest/v1/rpc/admin_delete_profile','POST',{p_id:id});
     logActivity(`Rejected teacher: ${prof?.email}`,'warning');
@@ -1647,7 +1908,7 @@ function viewTeacherDashboard(teacherId){
     <h3 style="margin-bottom:10px;">Exams (${exams.length})</h3>
     ${exams.length?`<div style="overflow-x:auto;margin-bottom:20px;"><table>
       <thead><tr><th>Subject</th><th>Class</th><th>Term</th><th>Type</th><th>Status</th><th>Questions</th></tr></thead>
-      <tbody>${exams.map(e=>{const m=decodeMeta(e.subject);const qLen=JSON.parse(e.csv_data||'[]').length;return`<tr>
+      <tbody>${exams.map(e=>{const m=decodeMeta(e.subject);const qLen=parseQuestionData(e.csv_data).length;return`<tr>
         <td style="font-weight:600;">${m.subject}</td><td>${m.cls}</td><td>${m.term}</td><td>${m.type}</td>
         <td><span style="padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;${e.is_open?'background:rgba(16,185,129,0.15);color:var(--primary)':'background:var(--danger-dim);color:var(--danger)'}">${e.is_open?'Live':'Locked'}</span></td>
         <td>${qLen}</td>
@@ -1700,7 +1961,7 @@ function renderAllExams(){
   tbody.innerHTML=list.map(e=>{
     const m=decodeMeta(e.subject);
     const prof=allProfiles.find(p=>p.id===e.teacher_id);
-    const qLen=JSON.parse(e.csv_data||'[]').length;
+    const qLen=parseQuestionData(e.csv_data).length;
     return`<tr>
       <td style="font-weight:600;">${m.subject}${m.topic!=='—'?`<br><small style="color:var(--text-muted);">📖 ${m.topic}</small>`:''}</td>
       <td style="font-size:12px;color:var(--text-muted);">${prof?.email||'—'}</td>

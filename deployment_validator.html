@@ -45,7 +45,7 @@
   </div>
 </div>
 <script>
-const REQUIRED=['index.html','teacher.html','student.html','admin.html','offline.html','sw.js','manifest.webmanifest','hmg-icon.svg','assets/hmg-academy-logo.png','README.md','ENHANCEMENT_REPORT_DEPLOYMENT.md'];
+const REQUIRED=['index.html','teacher.html','student.html','admin.html','offline.html','sw.js','manifest.webmanifest','hmg-icon.svg','assets/hmg-academy-logo.png','README.md','DEPLOYMENT.md','FEATURES.md','COMPLETE_SQL_SETUP.sql'];
 let results=[];
 function row(status,title,msg){return{status,title,msg}}
 async function fileExists(path){try{const r=await fetch(path,{cache:'no-store'});return r.ok}catch(e){return false}}
@@ -61,11 +61,13 @@ async function runChecks(){
  results.push(row(manifest.includes('HMG Academy CBT')&&manifest.includes('icons')?'ok':'bad','PWA manifest',manifest?'Manifest exists and contains app metadata.':'manifest.webmanifest missing.'));
  const sw=await textOf('sw.js');
  results.push(row(sw.includes('CACHE_NAME')&&sw.includes('offline.html')?'ok':'bad','Service worker',sw?'Service worker file found with offline fallback.':'sw.js missing.'));
- const teacher=await textOf('teacher.html'); const student=await textOf('student.html'); const admin=await textOf('admin.html');
+ const teacher=await textOf('teacher.html'); const student=await textOf('student.html'); const admin=await textOf('admin.html'); const sql=await textOf('COMPLETE_SQL_SETUP.sql');
  const hasSB=teacher.includes('SB_URL')&&teacher.includes('SB_KEY')&&student.includes('SB_URL')&&student.includes('SB_KEY');
  results.push(row(hasSB?'ok':'bad','Supabase config',hasSB?'SB_URL and SB_KEY are present in teacher/student portals.':'Supabase variables are missing.'));
  results.push(row(!teacher.includes('service_role')&&!student.includes('service_role')&&!admin.includes('service_role')?'ok':'bad','No service_role key','No frontend file appears to contain a Supabase service_role key.'));
+ results.push(row(sql.includes('is_platform_admin')&&sql.includes('get_public_exam_by_code')&&sql.includes('get_exam_attempt_count')?'ok':'bad','Correct v3.1 SQL/RPC setup',sql?'SQL contains admin guard, public exam RPC, and attempt-count RPC.':'COMPLETE_SQL_SETUP.sql missing.'));
  results.push(row(teacher.includes('admin_get_all_profiles')&&admin.includes('admin_get_all_results')?'ok':'warn','Admin SQL/RPC support','Admin panel and teacher SQL guide include admin RPC references.'));
+ results.push(row(student.includes('get_public_exam_by_code')&&student.includes('get_exam_attempt_count')?'ok':'bad','Student secure access RPCs','Student portal uses secure RPCs instead of broad anonymous table reads.')); 
  results.push(row(student.includes('downloadResultBackup')&&teacher.includes('importStudentResultBackup')?'ok':'warn','Offline result recovery','Student backup download and teacher backup import are present.'));
  results.push(row(student.includes('face-api.js')&&student.includes('Web Audio API')?'ok':'warn','Free proctoring tools','Browser/cdn-based face/audio proctoring code detected; no paid AI API required.'));
  const missing=REQUIRED.filter(async()=>false);

@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
-// HMG Academy CBT Pro v3.0 — Service Worker (FIXED)
+// HMG Academy CBT Pro v3.1 — Service Worker (FIXED)
 // ═══════════════════════════════════════════════════════════════
 // Provides PWA app shell caching for offline functionality.
 // Supabase API calls always use the network (not cached).
-// FIXED v3.0: Removed references to non-existent files from cache.
+// FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v6';
+const CACHE_NAME = 'hmg-cbt-shell-v7';
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [

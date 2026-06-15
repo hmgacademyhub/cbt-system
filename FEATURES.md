@@ -1,392 +1,265 @@
-# 📖 HMG Academy CBT Pro v3.0 — Complete Features Guide
+# HMG Academy CBT Pro v3.1 — Detailed Features
 
-> **Every feature documented and explained.**  
-> Built by **HMG Concepts** — *Learning Deliberately. Teaching Authentically.*
-
----
-
-## Table of Contents
-
-1. [System Architecture](#1-system-architecture)
-2. [Teacher Dashboard Features](#2-teacher-dashboard-features)
-3. [Student Portal Features](#3-student-portal-features)
-4. [Admin Panel Features](#4-admin-panel-features)
-5. [Question Types](#5-question-types)
-6. [Security & Integrity](#6-security--integrity)
-7. [Analytics & Reporting](#7-analytics--reporting)
-8. [Enterprise Features](#8-enterprise-features)
-9. [PWA & Offline](#9-pwa--offline)
-10. [Free Tools Used](#10-free-tools-used)
+This document explains the features in the CBT platform and how each feature helps schools, teachers, students, and administrators.
 
 ---
 
-## 1. System Architecture
+## 1. Access and roles
 
+### Landing page
+
+`index.html` introduces the platform, highlights HMG Academy/HMG Concepts branding, and links to the three portals.
+
+### Teacher role
+
+Teachers create exams, manage students, publish links/codes, and analyse results. Teacher data is isolated by RLS so each teacher sees their own exams, students, and results unless they are also an admin.
+
+### Student role
+
+Students do not need accounts. They access an exam by direct link or code. This is ideal for classrooms, WhatsApp groups, CBT labs, and low-friction assessment.
+
+### Admin role
+
+Admins approve teachers, supervise platform data, export reports, and run security checks.
+
+---
+
+## 2. Exam creation features
+
+| Feature | Explanation |
+|---|---|
+| Subject/class/term/topic/session metadata | Encodes school reporting context for filters and result exports. |
+| Duration | Countdown timer for exam pressure and fairness. |
+| Attempt limit | Uses secure v3.1 RPC to count previous attempts. |
+| Question count selection | Teachers can upload a large bank and deliver a random subset. |
+| Open mode | Any student with the link/code can sit the exam. |
+| Registered mode | Student ID must match the teacher’s uploaded roster. |
+| Start time | Students see a wait room until exam opens. |
+| Close time | Exam automatically stops accepting submissions after expiry. |
+| Negative marking | Deducts configured marks per wrong answer and stores adjusted score. |
+| Result release control | Teacher can show instant result or hold result until later. |
+| Instructions | Teacher-provided exam rules shown before entry. |
+
+---
+
+## 3. Question authoring and import
+
+### CSV import
+
+The system supports the extended CSV format:
+
+```text
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section
 ```
-┌─────────────────────────────────────────────────────┐
-│                  HMG ACADEMY CBT PRO v3.0            │
-├─────────────┬──────────────┬────────────────────────┤
-│   Frontend   │   Backend    │       Hosting           │
-├─────────────┼──────────────┼────────────────────────┤
-│ HTML5/CSS3  │  Supabase    │  GitHub Pages / Vercel  │
-│ JavaScript  │  PostgreSQL  │  Netlify               │
-│ Chart.js    │  Auth        │  (Static hosting)       │
-│ PWA/SW      │  Row-Level   │                        │
-│             │  Security    │                        │
-└─────────────┴──────────────┴────────────────────────┘
-         │              │              │
-    Teacher Portal  Student Portal  Admin Panel
+
+### XLSX import
+
+Teachers can upload spreadsheet files; the browser extracts rows and converts them into question objects.
+
+### PDF/text import
+
+For legacy question papers, teachers can paste/import structured text and the system detects common MCQ patterns.
+
+### Manual entry
+
+Teachers can build questions in the dashboard without external files.
+
+### Metadata columns
+
+- `Difficulty`: Easy, Medium, Hard, or school-defined label.
+- `Tags`: pipe-separated topic/skill tags, e.g. `Algebra|Quadratic Equations`.
+- `Section`: exam section, topic strand, or learning outcome.
+
+These fields support better analytics, remediation, and item-bank management.
+
+---
+
+## 4. Question types
+
+| Type | Auto scoring | Partial credit | Description |
+|---|---:|---:|---|
+| MCQ | Yes | No | One correct option A-D. |
+| MRQ | Yes | Yes | Multiple correct options with partial or all-or-nothing mode. |
+| True/False | Yes | No | A=True, B=False. |
+| Short answer | Yes | No | Exact answer plus accepted alternatives. |
+| Numeric | Yes | No | Numeric answer with tolerance and optional unit. |
+| Matching | Yes | Yes | Pair left and right items. |
+| Ordering | Yes | Yes | Arrange items in the correct sequence. |
+| Cloze | Yes | Yes | Several fill-in-the-gap blanks. |
+| Essay | Rule-based | Yes | Keyword/minimum-word score; teacher review recommended. |
+| Categorization | Yes | Yes | Place items into categories. |
+| Multi-numeric | Yes | Yes | Solve several numeric parts in one question. |
+
+---
+
+## 5. Student exam-taking features
+
+### Link + code access
+
+Teachers can share a URL or a 4–12 character code. The student portal extracts codes from:
+
+- `?code=ABC123`
+- `?exam=ABC123`
+- `?c=ABC123`
+- raw pasted code
+
+### Wait room
+
+If an exam has a future start time, students see a countdown. In v3.1, public RPC hides question data until the start time.
+
+### Draft auto-save
+
+Answers are saved locally during the exam. If the browser refreshes accidentally, the system can restore the draft.
+
+### Navigator
+
+Students see answered, unanswered, and flagged questions in a grid.
+
+### Flag for review
+
+Students can flag uncertain questions and revisit them before submission.
+
+### Keyboard shortcuts
+
+- `A-D`: select/toggle options
+- `N` or right arrow: next question
+- `P` or left arrow: previous question
+- `R`: flag question
+- `S`: open submit dialog
+
+This mimics common CBT/JAMB-style speed practice workflows.
+
+### Scientific calculator
+
+Built-in calculator supports arithmetic, trigonometry, powers, constants, memory, and history.
+
+### Read aloud
+
+Browser speech synthesis reads the question and options when available.
+
+---
+
+## 6. Integrity and proctoring features
+
+All integrity features use browser-side/free tools. They are not a replacement for human invigilation in high-stakes exams, but they provide useful logs.
+
+| Feature | Description |
+|---|---|
+| Tab/app switch detection | Flags when document becomes hidden. |
+| Window blur detection | Flags repeated focus loss. |
+| Fullscreen monitoring | Prompts/flags when fullscreen is exited. |
+| Copy/cut/paste/right-click blocking | Reduces easy copying. |
+| Print/view-source/devtools shortcut blocking | Flags suspicious shortcuts. |
+| DevTools window-size trap | Detects likely open devtools. |
+| Periodic camera snapshots | Stores snapshots in `proctor_data` if permission is granted. |
+| Multiple/no-face signal | Uses optional free face detection models where available. |
+| Audio spike warning | Uses Web Audio API to flag loud/possible dictation audio. |
+| Dynamic watermark | Shows student identity overlay during exam. |
+
+---
+
+## 7. Scoring and results
+
+### Decimal scores
+
+v3.1 stores scores as `NUMERIC(10,2)`, so partial-credit results match what students see.
+
+### Negative marking
+
+If a teacher sets a negative mark, the platform deducts:
+
+```text
+wrong_count × negative_mark
 ```
 
-### Key Architectural Decisions
-- **Static Frontend Only** — No server-side rendering needed
-- **Supabase as Backend** — Free tier provides database, auth, real-time
-- **RLS-First Security** — Data isolation at database level
-- **Browser-Based Analytics** — All scoring runs client-side
-- **No Paid APIs** — Zero external service costs
+The score is clamped at zero.
+
+### Held results
+
+If `release_results=false`, the student sees a “Submission Received” screen without score or answer review. The teacher still receives the full result.
+
+### Certificate/submission code
+
+Each submission receives a verification code stored in `results.cert_code` and displayed to the student.
+
+### Emergency backup
+
+If saving fails, the student can download a JSON backup and send it to the teacher. Teachers can import backup JSON from the dashboard.
 
 ---
 
-## 2. Teacher Dashboard Features (`teacher.html`)
+## 8. Teacher analytics
 
-### 2.1 Authentication
-| Feature | Description |
-|---------|-------------|
-| Email/Password Login | Supabase Auth with email and password |
-| Self-Service Signup | Teachers create their own accounts |
-| Admin Approval Workflow | New accounts "pending" until admin approves |
-| Password Reset | Email-based recovery via Supabase |
-| Session Management | Persistent sessions with auto-logout |
-| Password Strength Meter | Visual indicator during signup |
-
-### 2.2 Dashboard Home
-| Feature | Description |
-|---------|-------------|
-| Overview Stats | Total exams, submissions, pass rate, integrity flags |
-| Recent Activity Feed | Latest submissions with scores |
-| Quick Actions | Shortcuts to create, results, assessments, settings |
-| Live Exams Summary | Currently active exams |
-| Notification Bell | Real-time alerts for new submissions |
-
-### 2.3 Exam Creation (14 Configurable Parameters)
-- Subject, Class/Arm, Term, Exam Type, Topic, Academic Session
-- Duration (minutes), Attempt Limits (1/2/Unlimited)
-- Question Selection (count or all), Pass Mark (%)
-- Auto-Close Date/Time, Start Window Date/Time
-- Negative Marking (deduction per wrong answer)
-- Result Release Control (immediate or held)
-- Custom Exam Instructions
-- Exam Mode: Open (anyone) or Registered (verified students only)
-
-### 2.4 Question Input Methods
-| Method | Description |
-|--------|-------------|
-| **CSV Upload** | 14-column format, all 11 question types |
-| **Manual Entry** | Type directly with type-specific forms |
-| **Excel (XLSX) Import** | Upload spreadsheets |
-| **PDF Upload** | Parse text-based PDFs |
-| **Template Download** | Pre-formatted CSV templates |
-
-### 2.5 Exam Management
-| Feature | Description |
-|---------|-------------|
-| **Full Exam Editing** | Edit every field of any existing exam |
-| **Question Append** | Add questions to published exams |
-| **Question Bank Editor** | Search, edit, add, delete individual questions |
-| **Exam Preview** | See what students will see |
-| **Exam Duplication** | Create a copy as new locked draft |
-| **Open/Lock Toggle** | Instant availability control |
-| **Code Regeneration** | Roll new 6-character access code |
-| **WhatsApp Sharing** | Pre-formatted exam link messages |
-| **Access Sheet Printing** | Invigilation sheets with codes |
-| **Exam Archive** | Soft-delete — hide but preserve data |
-| **Batch Actions** | Select multiple, apply simultaneously |
-| **Package Export/Import** | JSON backup and restore |
-| **Question Reusability** | Import from past exams |
-
-### 2.6 Results & Analytics
-- Results table with filtering and sorting
-- Per-student correct/wrong/skipped counts
-- Answer breakdown with teacher explanations
-- Difficulty heatmap (time-spent per question)
-- Proctor photo viewer
-- Result slip printing
-- CSV export and Item Analysis export
-- Bulk delete with checkbox selection
-- Emergency backup import
-- Score distribution charts (Chart.js)
-- Pass/fail ratio doughnut chart
-- Submission trend line chart (30 days)
-- Per-question difficulty analysis
-- Student progress tracking (historical)
-- Weakness identification
-- Leaderboard with percentiles
-- Class insights with rule-based recommendations
-
-### 2.7 Student Management
-- Class roster upload and management
-- Student search by name, ID, or class
-- CSV import for bulk student addition
-- Registered-mode exam restriction
-- Individual student addition via UI
-
-### 2.8 Theme & UI
-- Dark mode (default) and light mode toggle
-- Responsive design (mobile, tablet, desktop)
-- Collapsible sidebar with section labels
-- Print styles for reports and results
+| Analytics | Purpose |
+|---|---|
+| Score distribution | See class performance spread. |
+| Pass/fail ratio | Quickly judge performance against pass mark. |
+| Per-question item analysis | Identify easy/hard questions and misconceptions. |
+| Time analytics | Detect questions taking too long. |
+| Leaderboard | Rank performance and percentiles. |
+| Weakness identification | Find struggling students/topics. |
+| Rule-based insights | No paid AI API; transparent recommendations. |
+| CSV export | Use in Excel, Google Sheets, or school records. |
 
 ---
 
-## 3. Student Portal Features (`student.html`)
+## 9. Admin features
 
-### 3.1 Exam Access
-| Feature | Description |
-|---------|-------------|
-| Code Entry | 6-character exam access code |
-| Direct Link | Auto-load with code pre-filled |
-| Link Checker | Validate codes before entering |
-| Name Input | Full name and class identification |
-| Integrity Pledge | Accept exam rules before starting |
-| Registered Mode | Student ID identity verification |
+- Teacher account approval.
+- Pending/active/inactive status control.
+- Admin promotion.
+- Platform-wide exam and result views.
+- CSV exports.
+- Security checks.
+- RLS smoke-test SQL download.
+- Deployment checklist downloads.
+- Platform health indicators.
 
-### 3.2 During the Exam
-| Feature | Description |
-|---------|-------------|
-| Countdown Timer | Live with color warnings (green→yellow→red) |
-| Question Navigator | Grid showing answered/flagged/skipped |
-| Answer Selection | Type-adaptive UI |
-| Flag Questions | Mark for later review |
-| Auto-Save | localStorage every 30 seconds |
-| Progress Bar | Visual completion percentage |
-| Navigation Buttons | Previous/Next with keyboard shortcuts |
-| Scientific Calculator | Built-in sci-calc |
-| Text-to-Speech | Browser-native TTS reads questions |
-| Font Size Control | A-/A+ buttons |
-| Tab-Switch Detection | Warns and logs tab/window switches |
-| Fullscreen Enforcement | Detects exit from fullscreen |
-| DevTools Detection | Flags developer tools opening |
-| Screen Watermark | Dynamic anti-screenshot overlay |
-| Right-Click Disabled | Prevents copy/paste |
-
-### 3.3 After Submission
-| Feature | Description |
-|---------|-------------|
-| Instant Results | Score displayed immediately (unless held) |
-| Answer Review | Correct answers with explanations |
-| Result Certificate | Printable with verification code |
-| Performance Summary | Breakdown by score band |
-| Time Report | Duration of exam completion |
-| PDF Export | Downloadable result |
-| Result Sharing | WhatsApp or other methods |
-| Emergency Backup | JSON download if server save fails |
-| Retry Option | Re-attempt if multiple attempts allowed |
+Admin RPCs are protected server-side by `public.is_platform_admin()`.
 
 ---
 
-## 4. Admin Panel Features (`admin.html`)
+## 10. PWA/offline shell
 
-### 4.1 Platform Management
-| Feature | Description |
-|---------|-------------|
-| Teacher Overview | All registered teachers with status |
-| Account Approval | Approve/reject new teachers |
-| Account Suspension | Deactivate/reactivate access |
-| Role Promotion | Promote teachers to admin |
-| Platform Analytics | System-wide usage statistics |
-| Exam Oversight | All exams across all teachers |
-| Result Management | All student results platform-wide |
-| Broadcast Announcements | Notices to all teachers |
-
-### 4.2 Security & Deployment
-| Feature | Description |
-|---------|-------------|
-| Security Checks | Browser-based RLS, RPC, HTTPS verification |
-| Deployment Validation | Required files check |
-| Admin Checklist | Downloadable operational checklist |
-| SQL Smoke Test | Downloadable verification queries |
-| Platform Export | Full CSV of teachers, exams, results |
-| Activity Logging | All admin actions with timestamps |
-
-### 4.3 Dashboard Pages
-| Page | Description |
-|------|-------------|
-| **Overview** | Platform health, recent submissions, pending approvals |
-| **Pending Approvals** | Teachers awaiting confirmation |
-| **All Teachers** | Complete management with filtering |
-| **All Exams** | Platform-wide exam listing |
-| **All Results** | Platform-wide results with filters |
-| **Activity Log** | Chronological admin action record |
-| **Security & Deployment** | Health checks and tools |
-| **Setup & SQL** | Database setup guide with copyable SQL |
+- `manifest.webmanifest` makes the platform installable.
+- `sw.js` caches the app shell.
+- `offline.html` provides a fallback page.
+- Exam data still requires Supabase connectivity at loading/submission time, but drafts and emergency backup reduce data-loss risk.
 
 ---
 
-## 5. Question Types (11+)
+## 11. Free-tool architecture
 
-| # | Type | Code | Student UI | Scoring |
-|---|------|------|------------|---------|
-| 1 | Multiple Choice | `mcq` | Radio buttons | 1 correct, 0 wrong |
-| 2 | Multiple Response | `mrq` | Checkboxes | Full/partial credit |
-| 3 | True/False | `tf` | Two buttons | 1 correct, 0 wrong |
-| 4 | Short Answer | `short` | Text input | Case-insensitive match |
-| 5 | Numeric | `numeric` | Number input | Within tolerance range |
-| 6 | Matching | `matching` | Drag/drop or dropdown | Per-pair scoring |
-| 7 | Ordering | `ordering` | Drag/drop | Per-position scoring |
-| 8 | Cloze | `cloze` | Multiple text inputs | Per-blank scoring |
-| 9 | Essay | `essay` | Large text area | Keyword matching |
-| 10 | Categorization | `categorization` | Category assignment | Per-item accuracy |
-| 11 | Multi-Numeric | `multi_numeric` | Multiple number inputs | Per-part scoring |
-
-### CSV Format (14 Columns)
-```
-Question | A | B | C | D | CorrectAnswer | Explanation | Type | Tolerance | Unit | Accept | MRQ_AON | Pairs | Items
-```
-Columns 1–7: Required base format. Columns 8–14: Optional, type-specific.
+| Layer | Tool |
+|---|---|
+| Frontend | HTML, CSS, JavaScript |
+| Hosting | Any static host |
+| Database/auth | Supabase free tier |
+| Charts | Chart.js CDN |
+| PWA | Service Worker |
+| Proctoring helpers | Browser APIs, optional free CDN model |
+| AI | None; rule-based logic only |
 
 ---
 
-## 6. Security & Integrity
+## 12. Brand integration
 
-### 6.1 Database Security
-| Feature | Description |
-|---------|-------------|
-| Row-Level Security | PostgreSQL data isolation per teacher |
-| SECURITY DEFINER Functions | Admin RPC bypasses RLS safely |
-| Anon INSERT Policy | Students submit without auth |
-| No Service Role Key | Frontend uses anon key only |
+The HMG Academy / HMG Concepts identity is embedded in:
 
-### 6.2 Exam Integrity
-| Feature | Description |
-|---------|-------------|
-| Tab-Switch Detection | Logs browser tab/window switches |
-| Fullscreen Enforcement | Detects exit from fullscreen |
-| DevTools Detection | Flags developer tools opening |
-| Right-Click Disabled | Prevents copy/paste |
-| Screen Watermark | Anti-screenshot overlay |
-| One-Submission Lock | Prevents duplicate attempts |
-| Proctor Photo Capture | 3 intake photos + periodic snapshots |
-| Multiple People Detection | Basic face detection warning |
-| Audio Monitoring | Detects unusual audio levels |
-| Violation Logging | All integrity events timestamped |
+- page titles
+- landing page
+- teacher login/dashboard
+- student portal
+- admin portal
+- manifest
+- documentation
+- exported reports/checklists
+- certificates/submission backups
 
-### 6.3 Result Integrity
-| Feature | Description |
-|---------|-------------|
-| Stored Score Counts | Ground truth saved at submission |
-| Verification Codes | Unique hash per result certificate |
-| Emergency Backup | JSON download if server save fails |
-| Proctor Evidence | Photos and violation logs attached |
+Brand details:
 
----
-
-## 7. Analytics & Reporting
-
-### 7.1 Performance Bands
-| Band | Range | Color | Action |
-|------|-------|-------|--------|
-| Distinction | 90–100% | Green | Recognize and challenge |
-| Credit | 70–89% | Blue | Good performance |
-| Pass | 50–69% | Amber | Meet expectations |
-| Near Miss | 40–49% | Orange | Targeted intervention |
-| Fail | 0–39% | Red | Urgent remedial teaching |
-
-### 7.2 Class Insights (Rule-Based, No AI API)
-- Average score vs. pass mark
-- Struggling students (below 40%)
-- Near-miss students (40% to pass mark)
-- Top performers (80%+)
-- Hardest questions (highest error rates)
-- Teacher recommendations
-
-### 7.3 Item Analysis (Per-Question CSV Export)
-- Question number and type
-- Attempted, correct, wrong, skipped counts
-- Error rate percentage
-- Average time spent
-
----
-
-## 8. Enterprise Features
-
-### 8.1 Multi-Teacher Support
-- Independent exam creation per teacher
-- Separate student rosters
-- Individual analytics and reports
-- Admin approval workflow
-
-### 8.2 Registered-Student Mode
-- Teacher uploads student roster via CSV
-- Students verify identity with Student ID
-- Only registered students can sit exam
-- Results linked to specific student records
-
-### 8.3 Exam Templates
-- Save configurations to localStorage
-- Duration, pass mark, attempt limits
-- Subject, class, term combinations
-- Negative marking settings
-- Instant loading for repeated exam types
-
-### 8.4 Platform Announcements
-- Admin broadcasts to all teachers
-- Maintenance notices, policy updates
-- Stored in localStorage for persistence
-
-### 8.5 Data Portability
-| Format | Use | Direction |
-|--------|-----|-----------|
-| CSV (Questions) | Upload banks | Import |
-| CSV (Students) | Upload rosters | Import |
-| CSV (Results) | Download results | Export |
-| CSV (Item Analysis) | Difficulty report | Export |
-| CSV (Platform) | Full export | Export |
-| JSON (Exam Package) | Backup/restore | Both |
-| JSON (Student Backup) | Emergency recovery | Both |
-| JSON (Teacher Backup) | Complete export | Export |
-
----
-
-## 9. PWA & Offline
-
-### 9.1 Progressive Web App
-| Feature | Description |
-|---------|-------------|
-| Installable | Add to home screen on mobile |
-| App Shell Caching | Core files cached for instant loading |
-| Offline Fallback | Custom page when no internet |
-| Auto-Save | Exam progress saved every 30s |
-| Emergency Backup | JSON download if save fails |
-
-### 9.2 Offline Limitations
-- Login/authentication requires internet
-- Loading questions requires internet
-- Submitting results requires internet
-- Only exam-taking progress auto-saves offline
-
----
-
-## 10. Free Tools Used
-
-| Tool | Purpose | Cost |
-|------|---------|------|
-| Supabase | Database + Auth + Real-time | Free (500MB, 50K MAU) |
-| Chart.js | Analytics charts | Free (CDN) |
-| GitHub | Version control | Free |
-| Vercel | Production hosting | Free (100GB/mo) |
-| Netlify | Alternative hosting | Free (100GB/mo) |
-| GitHub Pages | Alternative hosting | Free |
-| PWA APIs | App installation, offline | Free (built-in) |
-| Web Speech API | Text-to-speech | Free (built-in) |
-| FileReader API | CSV/XLSX/PDF parsing | Free (built-in) |
-| Canvas API | Certificate generation | Free (built-in) |
-| localStorage | Auto-save, templates | Free (built-in) |
-| Page Visibility API | Tab-switch detection | Free (built-in) |
-| Fullscreen API | Exam integrity | Free (built-in) |
-
-> **Total monthly cost: ₦0** — No paid AI APIs, no server costs, no license fees.
-
----
-
-> **HMG Academy CBT Pro v3.0** — *Learning Deliberately. Teaching Authentically.*  
-> © 2026 HMG Concepts. All features free — no paid APIs required.
+- Founder: Adewale Samson Adeagbo
+- WhatsApp: +234 810 086 6322
+- Phone: +234 907 790 7677
+- Email: hismarvellousgrace@gmail.com
+- Tech/partnerships: buildingmyictcareer@gmail.com

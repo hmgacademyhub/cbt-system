@@ -16,7 +16,7 @@
     <img class="logo" src="assets/hmg-academy-logo.png" alt="HMG Academy logo">
     <div>
       <span class="badge">Free Tools</span><span class="badge">No AI API</span><span class="badge">Browser + Supabase</span>
-      <h1>HMG Academy CBT Pro Feature & Deployment Guide</h1>
+      <h1>HMG Academy CBT Pro v3.1 Feature & Deployment Guide</h1>
       <p class="sub">A detailed expert explanation of every major system feature and the exact deployment process for schools, tutors, academies, and virtual classrooms.</p>
       <div class="toolbar"><a class="btn" href="teacher.html">Teacher Dashboard</a><a class="btn ghost" href="student.html">Student Portal</a><a class="btn ghost" href="admin.html">Admin Panel</a><a class="btn ghost" href="deployment_validator.html">Deployment Validator</a></div>
     </div>
@@ -24,7 +24,7 @@
 
   <section class="card">
     <h2>1. System Purpose</h2>
-    <p>HMG Academy CBT Pro is a zero-build, static-web computer-based testing platform. It allows teachers to create exams, students to take exams by link or code, and administrators to supervise teacher accounts and platform-wide data. It deliberately avoids paid AI APIs. All advanced marking is done using transparent rule-based logic in the browser, while data storage uses the Supabase free tier.</p>
+    <p>HMG Academy CBT Pro is a zero-build, static-web computer-based testing platform. It allows teachers to create exams, students to take exams by link or code, and administrators to supervise teacher accounts and platform-wide data. It deliberately avoids paid AI APIs. All advanced marking is transparent rule-based browser/Supabase logic, while data storage uses the Supabase free tier. v3.1 adds secure student RPCs, decimal partial-credit scoring, negative marking, held results, and certificate/submission codes.</p>
   </section>
 
   <section class="card">
@@ -98,7 +98,7 @@
     <div class="step"><div class="num">2</div><div><h3>Confirm Configuration</h3><p>Open <code>teacher.html</code>, <code>student.html</code>, and <code>admin.html</code>. Confirm <code>SB_URL</code> and <code>SB_KEY</code> match your Supabase project.</p></div></div>
     <div class="step"><div class="num">3</div><div><h3>Upload Static Files</h3><p>Upload the entire folder, including <code>assets/</code>, <code>manifest.webmanifest</code>, <code>hmg-icon.svg</code>, <code>sw.js</code>, <code>offline.html</code>, and all HTML files to GitHub Pages, Cloudflare Pages, or Vercel.</p></div></div>
     <div class="step"><div class="num">4</div><div><h3>Set Auth Redirect URLs</h3><p>In Supabase: Authentication → URL Configuration. Add your deployed site URL and likely callback URLs, for example <code>https://your-domain/teacher.html</code> and <code>https://your-domain/admin.html</code>.</p></div></div>
-    <div class="step"><div class="num">5</div><div><h3>Run SQL Setup</h3><p>Open the deployed <code>teacher.html</code>, log in, go to Settings, and run every SQL block in Supabase SQL Editor. This creates RLS policies, students table, profiles, result columns, and admin RPC functions.</p></div></div>
+    <div class="step"><div class="num">5</div><div><h3>Run SQL Setup</h3><p>Run <code>COMPLETE_SQL_SETUP.sql</code> from top to bottom in Supabase SQL Editor. This creates/updates tables, RLS policies, secure student RPCs, admin RPCs, triggers, grants, result columns, and verification queries.</p></div></div>
     <div class="step"><div class="num">6</div><div><h3>Create Admin Profile</h3><p>Use the configured admin email or set <code>profiles.is_admin=true</code> / <code>role='admin'</code> for your admin account. Then test <code>admin.html</code>.</p></div></div>
     <div class="step"><div class="num">7</div><div><h3>Run Validators</h3><p>Open <code>deployment_validator.html</code> to check static assets. In Teacher Settings, click Live Diagnostic. In Admin Panel, check Security diagnostics and download the SQL smoke test if needed.</p></div></div>
     <div class="step"><div class="num">8</div><div><h3>Functional Test</h3><p>Create a sample exam, open it, copy the link/code, take it as a student, submit, confirm result appears in Teacher Dashboard, export CSV, and view per-question answers.</p></div></div>
@@ -115,6 +115,18 @@
       <li>Treat result exports, proctor photos, and backup JSON files as confidential student records.</li>
     </ul>
   </section>
+
+  <div class="card">
+    <h2>v3.1 Enterprise Security Highlights</h2>
+    <ul>
+      <li>Students load exams through <code>get_public_exam_by_code</code> instead of broad anonymous table reads.</li>
+      <li>Registered-student ID checks use <code>verify_student_for_exam</code>.</li>
+      <li>Attempt limits use <code>get_exam_attempt_count</code>.</li>
+      <li>Admin RPCs verify admin status inside PostgreSQL.</li>
+      <li>Partial-credit scores are stored as decimal values.</li>
+      <li>Negative marking and teacher-held results are supported.</li>
+    </ul>
+  </div>
 </div>
 </body>
 </html>

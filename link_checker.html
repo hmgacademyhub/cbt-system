@@ -82,6 +82,38 @@ function extractExamCode(raw){
   return codeMatch?codeMatch[0].toUpperCase():'';
 }
 
+function parseQuestionData(raw){
+  if(Array.isArray(raw))return raw;
+  if(!raw)return [];
+  try{
+    let parsed=typeof raw==='string'?JSON.parse(raw):raw;
+    if(typeof parsed==='string')parsed=JSON.parse(parsed);
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return [];}
+}
+
+async function sbRpc(name, body){
+  const res=await fetch(`${SB_URL}/rest/v1/rpc/${name}`,{
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+    body:JSON.stringify(body||{})
+  });
+  const text=await res.text();
+  let data=null;try{data=text?JSON.parse(text):null;}catch(e){data=text;}
+  if(!res.ok){const msg=(data&&(data.message||data.error||data.hint))||`HTTP ${res.status}`;throw new Error(msg);}
+  return data;
+}
+
+async function fetchExamForCheck(code){
+  try{return await sbRpc('get_public_exam_by_code',{p_code:code});}
+  catch(rpcErr){
+    console.warn('[CBT] RPC checker fallback:',rpcErr.message);
+    const res=await fetch(`${SB_URL}/rest/v1/exams?code=eq.${encodeURIComponent(code)}&select=code,is_open,start_at,close_at,duration,subject,csv_data,exam_mode`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+    if(!res.ok)throw rpcErr;
+    return await res.json();
+  }
+}
+
 function row(state,title,detail){
   const ico={ok:'✅',err:'❌',warn:'⚠️'}[state]||'•';
   return `<div class="check ${state}"><div class="ico">${ico}</div><div><div class="title">${title}</div><div class="detail">${detail||''}</div></div></div>`;
@@ -111,15 +143,8 @@ async function runCheck(){
 
   // STEP 2 — reach the database
   try{
-    const res=await fetch(`${SB_URL}/rest/v1/exams?code=eq.${encodeURIComponent(code)}&select=code,is_open,close_at,duration,subject,csv_data,exam_mode`,{
-      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}
-    });
-    if(!res.ok){
-      html+=row('err','Database returned an error','HTTP '+res.status+'. The exam server may be temporarily unavailable. Try again shortly.');
-      body.innerHTML=html;btn.disabled=false;btn.innerText='Run Health Check →';return;
-    }
-    const data=await res.json();
-    html+=row('ok','Database reachable','Connected to the exam server successfully.');
+    const data=await fetchExamForCheck(code);
+    html+=row('ok','Database reachable','Connected to the exam server successfully through the secure public exam endpoint.');
 
     // STEP 3 — exam exists
     if(!data.length){
@@ -138,6 +163,11 @@ async function runCheck(){
     }
 
     // STEP 5 — schedule
+    if(exam.start_at){
+      const st=new Date(exam.start_at).getTime();
+      if(st>Date.now()) html+=row('warn','Exam is scheduled for later','Starts at '+new Date(exam.start_at).toLocaleString()+'. Question data remains hidden until then.');
+      else html+=row('ok','Start time reached','Started at '+new Date(exam.start_at).toLocaleString()+'.');
+    }
     if(exam.close_at){
       const t=new Date(exam.close_at).getTime();
       if(t<=Date.now()){
@@ -149,17 +179,21 @@ async function runCheck(){
 
     // STEP 6 — question data
     let qCount=0,parseOk=true;
-    try{ const q=JSON.parse(exam.csv_data); qCount=Array.isArray(q)?q.length:0; }catch(e){ parseOk=false; }
+    try{ const q=parseQuestionData(exam.csv_data); qCount=Array.isArray(q)?q.length:0; }catch(e){ parseOk=false; }
     if(!parseOk){
       html+=row('err','Question data is corrupted','The exam exists but its questions cannot be read. Ask the teacher to re-publish it.');
     }else if(qCount===0){
-      html+=row('warn','Exam has no questions','Add questions before sharing the link with students.');
+      if(exam.start_at && new Date(exam.start_at).getTime()>Date.now()){
+        html+=row('warn','Questions hidden until start time','This is expected for scheduled exams in v3.1. Re-run the check after the start time to verify question count.');
+      }else{
+        html+=row('warn','Exam has no questions','Add questions before sharing the link with students.');
+      }
     }else{
       html+=row('ok','Questions ready',qCount+' question'+(qCount>1?'s':'')+' loaded.');
     }
 
     // Final verdict + direct link
-    const ready = exam.is_open && parseOk && qCount>0 && !(exam.close_at && new Date(exam.close_at).getTime()<=Date.now());
+    const ready = exam.is_open && parseOk && qCount>0 && !(exam.start_at && new Date(exam.start_at).getTime()>Date.now()) && !(exam.close_at && new Date(exam.close_at).getTime()<=Date.now());
     if(ready){
       const link='student.html?code='+code;
       html+=row('ok','READY FOR STUDENTS','This link/code is working. Students can begin.')

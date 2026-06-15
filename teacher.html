@@ -1562,46 +1562,132 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
       <!-- Supabase Setup Guide -->
       <div class="card">
         <h2 style="margin-bottom:4px;">⚙️ Supabase Setup Guide</h2>
-        <p style="font-size:13px;margin-bottom:16px;">Run all these SQL statements once in <strong>Supabase Dashboard → SQL Editor</strong>. This sets up data isolation, security, and all required columns. Run them in order.</p>
+        <p style="font-size:13px;margin-bottom:16px;"><strong>Recommended:</strong> run <code>COMPLETE_SQL_SETUP.sql</code> from top to bottom for the canonical v3.1 setup. The blocks below are arranged for manual setup/repair when you need to copy smaller sections.</p>
+
+        <div class="settings-block" style="border-color:rgba(59,130,246,0.3);">
+          <div class="settings-block-title" style="color:var(--info);">🧱 Step 0 — Create/Upgrade Core Tables First</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Run this before RLS policies if your Supabase project is new. It creates the four core tables and preserves existing data.</p>
+          <div class="sql-block" id="sql0">-- Core tables required before policies and helper functions.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  full_name TEXT DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'teacher',
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.exams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  code TEXT UNIQUE NOT NULL,
+  subject TEXT NOT NULL,
+  duration INTEGER NOT NULL DEFAULT 45,
+  attempt_limit INTEGER NOT NULL DEFAULT 1,
+  select_count INTEGER NOT NULL DEFAULT 0,
+  is_open BOOLEAN NOT NULL DEFAULT false,
+  exam_mode TEXT NOT NULL DEFAULT 'open',
+  negative_mark NUMERIC NOT NULL DEFAULT 0,
+  release_results BOOLEAN NOT NULL DEFAULT true,
+  instructions TEXT NOT NULL DEFAULT '',
+  is_archived BOOLEAN NOT NULL DEFAULT false,
+  cert_code TEXT NOT NULL DEFAULT '',
+  start_at TIMESTAMPTZ,
+  close_at TIMESTAMPTZ,
+  csv_data JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID NOT NULL REFERENCES public.exams(id) ON DELETE CASCADE,
+  student_name TEXT NOT NULL,
+  student_class TEXT NOT NULL DEFAULT '',
+  student_id_ref TEXT DEFAULT '',
+  student_type TEXT DEFAULT 'open',
+  score NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total INTEGER NOT NULL DEFAULT 0,
+  correct_count INTEGER DEFAULT NULL,
+  wrong_count INTEGER DEFAULT NULL,
+  skipped_count INTEGER DEFAULT NULL,
+  attempt_number INTEGER DEFAULT 1,
+  time_taken INTEGER DEFAULT 0,
+  answers_data JSONB,
+  violations INTEGER DEFAULT 0,
+  violation_log JSONB DEFAULT '[]'::jsonb,
+  proctor_data JSONB,
+  cert_code TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.students (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  class TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(teacher_id, student_id)
+);</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql0')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
 
         <div class="settings-block" style="border-color:rgba(239,68,68,0.3);">
-          <div class="settings-block-title" style="color:var(--danger);">🔐 Step 1 — Enable Row Level Security (RLS) on Both Tables</div>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">This is the master switch. Without this, all teachers see each other's data.</p>
-          <div class="sql-block" id="sql1">-- Enable RLS on both tables
-ALTER TABLE exams ENABLE ROW LEVEL SECURITY;
-ALTER TABLE results ENABLE ROW LEVEL SECURITY;</div>
+          <div class="settings-block-title" style="color:var(--danger);">🔐 Step 1 — Enable Row Level Security (RLS) on All Tables</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">This is the master switch. Without this, table-level isolation is not enforced.</p>
+          <div class="sql-block" id="sql1">-- Enable RLS on every application table
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exams    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.results  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql1')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
         <div class="settings-block" style="border-color:rgba(16,185,129,0.3);">
           <div class="settings-block-title" style="color:var(--primary);">🔒 Step 2 — Exams: Teachers Only See &amp; Edit Their Own</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Each teacher is completely isolated. They can only read, create, update, and delete their own exams.</p>
-          <div class="sql-block" id="sql2">-- Teachers can only SELECT their own exams (authenticated)
+          <div class="sql-block" id="sql2">-- Helper required before any admin-aware policy below.
+CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE((
+    SELECT (p.is_admin=true OR p.role='admin') AND p.status='active'
+    FROM public.profiles p WHERE p.id=auth.uid() LIMIT 1
+  ), false)
+  OR lower(COALESCE(auth.jwt()-&gt;&gt;'email','')) = lower('buildingmyictcareer@gmail.com');
+$$;
+
+-- Exams: teachers manage their own exams; platform admins can supervise all.
+-- Students load exams through get_public_exam_by_code(), not broad anonymous SELECT.
+DROP POLICY IF EXISTS "Students can read exams by code" ON public.exams;
+DROP POLICY IF EXISTS "Teachers select own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers insert own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers update own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers delete own exams" ON public.exams;
+
 CREATE POLICY "Teachers select own exams"
-ON exams FOR SELECT
-TO authenticated
-USING (auth.uid() = teacher_id);
+ON public.exams FOR SELECT TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());
 
--- Students (anonymous) can read any exam to load it by code
-CREATE POLICY "Students can read exams by code"
-ON exams FOR SELECT
-TO anon
-USING (true);
-
--- Teachers can only INSERT exams they own
 CREATE POLICY "Teachers insert own exams"
-ON exams FOR INSERT
-WITH CHECK (auth.uid() = teacher_id);
+ON public.exams FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
 
--- Teachers can only UPDATE their own exams
 CREATE POLICY "Teachers update own exams"
-ON exams FOR UPDATE
-USING (auth.uid() = teacher_id);
+ON public.exams FOR UPDATE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
 
--- Teachers can only DELETE their own exams
 CREATE POLICY "Teachers delete own exams"
-ON exams FOR DELETE
-USING (auth.uid() = teacher_id);</div>
+ON public.exams FOR DELETE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql2')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -1611,52 +1697,72 @@ USING (auth.uid() = teacher_id);</div>
             ⚠️ The standard subquery approach <code>(SELECT teacher_id FROM exams WHERE id = exam_id)</code> causes a <strong>recursive RLS deadlock</strong> because the exams table also has RLS enabled.
             This version uses a <code>SECURITY DEFINER</code> helper function that bypasses RLS safely for the lookup only.
           </p>
-          <div class="sql-block" id="sql3">-- Step 3a: Drop old broken policies if they exist
-DROP POLICY IF EXISTS "Teachers select own results" ON results;
-DROP POLICY IF EXISTS "Teachers update own results" ON results;
-DROP POLICY IF EXISTS "Teachers delete own results" ON results;
-DROP POLICY IF EXISTS "Students can submit results" ON results;
+          <div class="sql-block" id="sql3">-- Results: create helper functions BEFORE policies, then create safe policies.
+CREATE OR REPLACE FUNCTION public.get_exam_teacher_id(p_exam_id UUID)
+RETURNS UUID
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$ SELECT teacher_id FROM public.exams WHERE id = p_exam_id LIMIT 1; $$;
 
--- Step 3b: Create a SECURITY DEFINER helper function.
--- This function runs as the DB owner and can read exams without RLS blocking it.
-CREATE OR REPLACE FUNCTION get_exam_teacher_id(p_exam_id uuid)
-RETURNS uuid
-LANGUAGE sql
-SECURITY DEFINER
-STABLE
+CREATE OR REPLACE FUNCTION public.is_exam_open_for_submission(p_exam_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
 AS $$
-  SELECT teacher_id FROM exams WHERE id = p_exam_id LIMIT 1;
+  SELECT EXISTS (
+    SELECT 1 FROM public.exams e
+    WHERE e.id = p_exam_id
+      AND e.is_archived = false
+      AND e.is_open = true
+      AND (e.start_at IS NULL OR e.start_at &lt;= NOW())
+      AND (e.close_at IS NULL OR e.close_at &gt; NOW())
+  );
 $$;
 
--- Step 3c: Recreate policies using the helper function (no recursive RLS)
+DROP POLICY IF EXISTS "Teachers select own results" ON public.results;
+DROP POLICY IF EXISTS "Students can submit results" ON public.results;
+DROP POLICY IF EXISTS "Teachers insert own results" ON public.results;
+DROP POLICY IF EXISTS "Teachers update own results" ON public.results;
+DROP POLICY IF EXISTS "Teachers delete own results" ON public.results;
+
 CREATE POLICY "Teachers select own results"
-ON results FOR SELECT
-TO authenticated
-USING (auth.uid() = get_exam_teacher_id(exam_id));
+ON public.results FOR SELECT TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
 
 CREATE POLICY "Students can submit results"
-ON results FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
+ON public.results FOR INSERT TO anon
+WITH CHECK (public.is_exam_open_for_submission(exam_id));
+
+CREATE POLICY "Teachers insert own results"
+ON public.results FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
 
 CREATE POLICY "Teachers update own results"
-ON results FOR UPDATE
-TO authenticated
-USING (auth.uid() = get_exam_teacher_id(exam_id));
+ON public.results FOR UPDATE TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin())
+WITH CHECK (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
 
 CREATE POLICY "Teachers delete own results"
-ON results FOR DELETE
-TO authenticated
-USING (auth.uid() = get_exam_teacher_id(exam_id));</div>
+ON public.results FOR DELETE TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql3')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
         <div class="settings-block" style="border-color:rgba(245,158,11,0.3);">
           <div class="settings-block-title" style="color:var(--warning);">📦 Step 4 — Add Anti-Cheat &amp; Answer Columns</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Adds columns for per-question answer data, violation counts, and integrity logs.</p>
-          <div class="sql-block" id="sql4">ALTER TABLE results ADD COLUMN IF NOT EXISTS answers_data JSONB;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS violations integer DEFAULT 0;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS violation_log JSONB;</div>
+          <div class="sql-block" id="sql4">-- Results upgrade columns: answers, timing, integrity, proctoring, certificate, and decimal scores.
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS answers_data    JSONB;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS time_taken      INTEGER DEFAULT 0;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS violations      INTEGER DEFAULT 0;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS violation_log   JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS proctor_data    JSONB;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS correct_count   INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS wrong_count     INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS skipped_count   INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS attempt_number  INTEGER DEFAULT 1;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS cert_code       TEXT DEFAULT '';
+ALTER TABLE public.results ALTER COLUMN score TYPE NUMERIC(10,2) USING score::NUMERIC;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql4')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -1674,64 +1780,70 @@ ALTER TABLE results ADD COLUMN IF NOT EXISTS violation_log JSONB;</div>
         <div class="settings-block" style="border-color:rgba(139,92,246,0.3);">
           <div class="settings-block-title" style="color:var(--purple);">📦 Step 5 — Add Student Mode Columns to Existing Tables</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">These columns enable registered-student exams and track how each student sat the exam.</p>
-          <div class="sql-block" id="sql5">-- Add exam_mode column to exams table
-ALTER TABLE exams ADD COLUMN IF NOT EXISTS exam_mode text DEFAULT 'open';
-
--- Add student identity columns to results table
-ALTER TABLE results ADD COLUMN IF NOT EXISTS student_id_ref  text;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS student_type    text DEFAULT 'open';
-ALTER TABLE results ADD COLUMN IF NOT EXISTS answers_data    JSONB;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS violations      integer DEFAULT 0;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS violation_log   JSONB;</div>
+          <div class="sql-block" id="sql5">-- Exam mode, scheduling, negative marking, result release control, archive, and instructions.
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS exam_mode       TEXT        NOT NULL DEFAULT 'open';
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS start_at        TIMESTAMPTZ;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS close_at        TIMESTAMPTZ;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS negative_mark   NUMERIC     NOT NULL DEFAULT 0;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS release_results BOOLEAN     NOT NULL DEFAULT true;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS instructions    TEXT        NOT NULL DEFAULT '';
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS is_archived     BOOLEAN     NOT NULL DEFAULT false;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS cert_code       TEXT        NOT NULL DEFAULT '';
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS student_id_ref TEXT DEFAULT '';
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS student_type   TEXT DEFAULT 'open';</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql5')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
         <div class="settings-block" style="border-color:rgba(16,185,129,0.3);">
           <div class="settings-block-title" style="color:var(--primary);">👨‍🎓 Step 6 — Create Students Table</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">This table stores your class roster for registered-mode exams. Each teacher only sees their own students.</p>
-          <div class="sql-block" id="sql6">CREATE TABLE IF NOT EXISTS students (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  teacher_id  uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  full_name   text NOT NULL,
-  student_id  text NOT NULL,
-  class       text NOT NULL,
-  created_at  timestamptz DEFAULT now(),
-  UNIQUE (teacher_id, student_id)
+          <div class="sql-block" id="sql6">-- Registered-student roster table and secure teacher/admin policies.
+CREATE TABLE IF NOT EXISTS public.students (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name   TEXT NOT NULL,
+  student_id  TEXT NOT NULL,
+  class       TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(teacher_id, student_id)
 );
 
--- Enable RLS — teachers only see their own students
-ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can verify student ID" ON public.students;
+DROP POLICY IF EXISTS "Teachers select own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers insert own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers update own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers delete own students" ON public.students;
 
 CREATE POLICY "Teachers select own students"
-ON students FOR SELECT USING (auth.uid() = teacher_id);
-
+ON public.students FOR SELECT TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());
 CREATE POLICY "Teachers insert own students"
-ON students FOR INSERT WITH CHECK (auth.uid() = teacher_id);
-
+ON public.students FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
+CREATE POLICY "Teachers update own students"
+ON public.students FOR UPDATE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
 CREATE POLICY "Teachers delete own students"
-ON students FOR DELETE USING (auth.uid() = teacher_id);
-
--- Students (anonymous) can read roster to verify their ID during exam
-CREATE POLICY "Anyone can verify student ID"
-ON students FOR SELECT USING (true);</div>
+ON public.students FOR DELETE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql6')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
         <div class="settings-block" style="border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.04);">
           <div class="settings-block-title" style="color:var(--warning);">⚠️ Step 7 — Fix Existing Teachers Already on the Platform</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">If teachers registered BEFORE the profiles table was created, they have no profile row and will be blocked on login. Run this SQL to create active profiles for all existing auth users. Change 'buildingmyictcareer@gmail.com' to your actual admin email.</p>
-          <div class="sql-block" id="sql7">-- Insert active profiles for all existing auth users
--- (Run this ONCE after creating the profiles table)
--- It skips anyone who already has a profile row
-INSERT INTO profiles (id, email, full_name, role, status)
+          <div class="sql-block" id="sql7">-- Migrate existing Auth users into profiles. Change the admin email if needed.
+INSERT INTO public.profiles (id, email, full_name, role, is_admin, status)
 SELECT
   u.id,
   u.email,
-  COALESCE(u.raw_user_meta_data->>'display_name', split_part(u.email,'@',1)),
-  CASE WHEN u.email = 'buildingmyictcareer@gmail.com' THEN 'admin' ELSE 'teacher' END,
-  CASE WHEN u.email = 'buildingmyictcareer@gmail.com' THEN 'active' ELSE 'active' END
+  COALESCE(u.raw_user_meta_data-&gt;&gt;'full_name', u.raw_user_meta_data-&gt;&gt;'display_name', split_part(u.email, '@', 1)),
+  CASE WHEN lower(u.email) = lower('buildingmyictcareer@gmail.com') THEN 'admin' ELSE 'teacher' END,
+  CASE WHEN lower(u.email) = lower('buildingmyictcareer@gmail.com') THEN true ELSE false END,
+  'active'
 FROM auth.users u
-WHERE NOT EXISTS (SELECT 1 FROM profiles p WHERE p.id = u.id)
+WHERE NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = u.id)
 ON CONFLICT (id) DO NOTHING;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql7')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
           <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">After running this, any new teacher who signs up will automatically get a 'pending' profile via the trigger (Step 4 in the admin SQL guide), and the admin must approve them before they can log in.</p>
@@ -1760,9 +1872,9 @@ CHUKWUEMEKA OBI, SS/2024/003, SSS2B</div>
         <div class="settings-block" style="border-color:rgba(16,185,129,0.3);">
           <div class="settings-block-title" style="color:var(--primary);">📷 Step 8 — Add Proctoring Data Column</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Required for storing student identity photos and periodic exam snapshots from the anti-cheat system.</p>
-          <div class="sql-block" id="sql8">ALTER TABLE results ADD COLUMN IF NOT EXISTS proctor_data JSONB;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS time_taken integer DEFAULT 0;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS attempt_number integer DEFAULT 1;</div>
+          <div class="sql-block" id="sql8">-- Proctoring data column for photo snapshots, face flags, and browser integrity signals.
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS proctor_data JSONB;
+CREATE INDEX IF NOT EXISTS idx_results_violations ON public.results(violations);</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql8')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -1774,9 +1886,12 @@ ALTER TABLE results ADD COLUMN IF NOT EXISTS attempt_number integer DEFAULT 1;</
             which could produce different results if the question bank was edited after students submitted.
             <strong>Run this if your teacher dashboard shows different wrong counts than students see.</strong>
           </p>
-          <div class="sql-block" id="sql8b">ALTER TABLE results ADD COLUMN IF NOT EXISTS correct_count  integer DEFAULT NULL;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS wrong_count    integer DEFAULT NULL;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS skipped_count  integer DEFAULT NULL;</div>
+          <div class="sql-block" id="sql8b">-- Accurate result columns for objective + partial-credit scoring.
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS correct_count  INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS wrong_count    INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS skipped_count  INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS attempt_number INTEGER DEFAULT 1;
+ALTER TABLE public.results ALTER COLUMN score TYPE NUMERIC(10,2) USING score::NUMERIC;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql8b')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -1787,98 +1902,106 @@ ALTER TABLE results ADD COLUMN IF NOT EXISTS skipped_count  integer DEFAULT NULL
             The <code>DROP … CASCADE</code> lines remove any old version first — this fixes the
             <em>"cannot change return type"</em> error.
           </p>
-          <div class="sql-block" id="sql9">-- ══════════════════════════════════════════════
--- Drop old versions first (fixes "cannot change
--- return type" error from previous runs)
--- ══════════════════════════════════════════════
-DROP FUNCTION IF EXISTS admin_get_all_profiles()   CASCADE;
-DROP FUNCTION IF EXISTS admin_get_all_exams()      CASCADE;
-DROP FUNCTION IF EXISTS admin_get_all_results()    CASCADE;
-DROP FUNCTION IF EXISTS admin_set_profile_status(uuid,text) CASCADE;
-DROP FUNCTION IF EXISTS admin_delete_profile(uuid) CASCADE;
+          <div class="sql-block" id="sql9">-- STEP 9: PUBLIC STUDENT RPC FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════════
 
--- ══════════════════════════════════════════════
--- admin sees all profiles
--- ══════════════════════════════════════════════
-CREATE FUNCTION admin_get_all_profiles()
-RETURNS SETOF profiles
-LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT * FROM profiles ORDER BY created_at DESC;
-$$;
+DROP FUNCTION IF EXISTS public.get_public_exam_by_code(TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.verify_student_for_exam(UUID, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.get_exam_attempt_count(UUID, TEXT, TEXT, TEXT) CASCADE;
 
--- ══════════════════════════════════════════════
--- admin sees all exams
--- ══════════════════════════════════════════════
-CREATE FUNCTION admin_get_all_exams()
-RETURNS SETOF exams
-LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT * FROM exams ORDER BY created_at DESC;
-$$;
-
--- ══════════════════════════════════════════════
--- admin sees all results (joined with exam info)
--- Uses only columns guaranteed to exist.
--- Adjust the column list if your table differs.
--- ══════════════════════════════════════════════
-CREATE FUNCTION admin_get_all_results()
+CREATE OR REPLACE FUNCTION public.get_public_exam_by_code(p_code TEXT)
 RETURNS TABLE (
-  id              uuid,
-  exam_id         uuid,
-  student_name    text,
-  student_class   text,
-  student_id_ref  text,
-  student_type    text,
-  score           integer,
-  total           integer,
-  attempt_number  integer,
-  time_taken      integer,
-  answers_data    jsonb,
-  violations      integer,
-  violation_log   jsonb,
-  proctor_data    jsonb,
-  created_at      timestamptz,
-  exams           jsonb
+  id              UUID,
+  code            TEXT,
+  subject         TEXT,
+  duration        INTEGER,
+  attempt_limit   INTEGER,
+  select_count    INTEGER,
+  is_open         BOOLEAN,
+  exam_mode       TEXT,
+  negative_mark   NUMERIC,
+  release_results BOOLEAN,
+  instructions    TEXT,
+  start_at        TIMESTAMPTZ,
+  close_at        TIMESTAMPTZ,
+  csv_data        JSONB,
+  created_at      TIMESTAMPTZ,
+  updated_at      TIMESTAMPTZ
 )
-LANGUAGE sql SECURITY DEFINER STABLE AS $$
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
   SELECT
-    r.id,
-    r.exam_id,
-    r.student_name,
-    r.student_class,
-    r.student_id_ref,
-    r.student_type,
-    r.score,
-    r.total,
-    COALESCE(r.attempt_number, 1),
-    COALESCE(r.time_taken,     0),
-    r.answers_data,
-    COALESCE(r.violations,     0),
-    r.violation_log,
-    r.proctor_data,
-    r.created_at,
-    jsonb_build_object(
-      'subject',    e.subject,
-      'teacher_id', e.teacher_id,
-      'csv_data',   e.csv_data
-    ) AS exams
-  FROM results r
-  LEFT JOIN exams e ON e.id = r.exam_id
-  ORDER BY r.created_at DESC;
+    e.id,
+    e.code,
+    e.subject,
+    e.duration,
+    e.attempt_limit,
+    e.select_count,
+    e.is_open,
+    e.exam_mode,
+    e.negative_mark,
+    e.release_results,
+    e.instructions,
+    e.start_at,
+    e.close_at,
+    CASE
+      WHEN e.start_at IS NOT NULL AND e.start_at &gt; NOW() THEN '[]'::jsonb
+      ELSE e.csv_data
+    END AS csv_data,
+    e.created_at,
+    e.updated_at
+  FROM public.exams e
+  WHERE upper(e.code) = upper(trim(p_code))
+    AND e.is_archived = false
+    AND e.is_open = true
+    AND (e.close_at IS NULL OR e.close_at &gt; NOW())
+  LIMIT 1;
 $$;
 
--- ══════════════════════════════════════════════
--- admin can approve / reject teachers
--- ══════════════════════════════════════════════
-CREATE FUNCTION admin_set_profile_status(p_id uuid, p_status text)
-RETURNS void
-LANGUAGE sql SECURITY DEFINER AS $$
-  UPDATE profiles SET status = p_status WHERE id = p_id;
+CREATE OR REPLACE FUNCTION public.verify_student_for_exam(p_exam_id UUID, p_student_id TEXT)
+RETURNS TABLE (
+  full_name  TEXT,
+  student_id TEXT,
+  class      TEXT
+)
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT s.full_name, s.student_id, s.class
+  FROM public.students s
+  JOIN public.exams e ON e.teacher_id = s.teacher_id
+  WHERE e.id = p_exam_id
+    AND e.is_archived = false
+    AND upper(s.student_id) = upper(trim(p_student_id))
+  LIMIT 1;
 $$;
 
-CREATE FUNCTION admin_delete_profile(p_id uuid)
-RETURNS void
-LANGUAGE sql SECURITY DEFINER AS $$
-  DELETE FROM profiles WHERE id = p_id;
+CREATE OR REPLACE FUNCTION public.get_exam_attempt_count(
+  p_exam_id UUID,
+  p_student_name TEXT,
+  p_student_class TEXT,
+  p_student_id_ref TEXT DEFAULT ''
+)
+RETURNS INTEGER
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT COUNT(*)::INTEGER
+  FROM public.results r
+  WHERE r.exam_id = p_exam_id
+    AND (
+      (COALESCE(trim(p_student_id_ref), '') &lt;&gt; '' AND upper(COALESCE(r.student_id_ref, '')) = upper(trim(p_student_id_ref)))
+      OR
+      (lower(trim(r.student_name)) = lower(trim(p_student_name))
+       AND lower(trim(r.student_class)) = lower(trim(p_student_class)))
+    );
 $$;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql9')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
           <p style="font-size:11px;color:var(--warning);margin-top:8px;">
@@ -1891,25 +2014,22 @@ $$;</div>
         <div class="settings-block" style="border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.03);">
           <div class="settings-block-title" style="color:var(--warning);">🔬 Step 10 — Verify Your Setup (Run to Test)</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Run this in the Supabase SQL Editor to confirm everything is working. You should see rows returned for exams and results if data exists.</p>
-          <div class="sql-block" id="sql10">-- Test 1: Confirm RLS policies exist on results table
-SELECT policyname, cmd, roles
+          <div class="sql-block" id="sql10">-- Verification checks
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname='public' AND tablename IN ('profiles','exams','results','students')
+ORDER BY tablename;
+
+SELECT tablename, policyname, cmd, roles
 FROM pg_policies
-WHERE tablename = 'results';
+WHERE schemaname='public'
+ORDER BY tablename, policyname;
 
--- Test 2: Confirm the helper function exists
-SELECT proname FROM pg_proc WHERE proname = 'get_exam_teacher_id';
-
--- Test 3: Confirm admin RPC functions exist
-SELECT proname FROM pg_proc
-WHERE proname IN (
-  'admin_get_all_results',
-  'admin_get_all_profiles',
-  'admin_get_all_exams'
-);
-
--- Test 4: Count all results (runs as superuser, bypasses RLS)
-SELECT COUNT(*) AS total_results FROM results;
-SELECT COUNT(*) AS total_exams FROM exams;</div>
+SELECT routine_name
+FROM information_schema.routines
+WHERE routine_schema='public'
+  AND routine_name IN ('get_public_exam_by_code','verify_student_for_exam','get_exam_attempt_count','is_platform_admin')
+ORDER BY routine_name;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql10')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -1918,52 +2038,10 @@ SELECT COUNT(*) AS total_exams FROM exams;</div>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
             If students complete exams but results don't appear in your dashboard, run this single SQL block. It safely adds every required column (skipping any that already exist), recreates the INSERT policy that lets students submit, and verifies the setup. <strong style="color:var(--danger);">Run this in Supabase Dashboard → SQL Editor.</strong>
           </p>
-          <div class="sql-block" id="sql11">-- ══════════════════════════════════════════════════
--- STEP 11: ONE-SHOT FIX — Run if submissions aren't saving
--- Safe to run multiple times (IF NOT EXISTS / OR REPLACE)
--- ══════════════════════════════════════════════════
-
--- 1. Ensure RLS is enabled
-ALTER TABLE results ENABLE ROW LEVEL SECURITY;
-ALTER TABLE exams   ENABLE ROW LEVEL SECURITY;
-
--- 2. Add all optional columns (safe — skips if already present)
-ALTER TABLE results ADD COLUMN IF NOT EXISTS student_id_ref  text;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS student_type    text    DEFAULT 'open';
-ALTER TABLE results ADD COLUMN IF NOT EXISTS answers_data    jsonb;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS violations      integer DEFAULT 0;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS violation_log   jsonb;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS proctor_data    jsonb;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS time_taken      integer DEFAULT 0;
-ALTER TABLE results ADD COLUMN IF NOT EXISTS attempt_number  integer DEFAULT 1;
-ALTER TABLE exams   ADD COLUMN IF NOT EXISTS exam_mode       text    DEFAULT 'open';
-ALTER TABLE exams   ADD COLUMN IF NOT EXISTS close_at        timestamptz;
-
--- 3. Drop the old INSERT policy (if it exists) and recreate it
---    This is the most common reason submissions silently fail.
-DROP POLICY IF EXISTS "Students can submit results" ON results;
-CREATE POLICY "Students can submit results"
-ON results FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
-
--- 4. Recreate the SECURITY DEFINER helper (safe — OR REPLACE)
-CREATE OR REPLACE FUNCTION get_exam_teacher_id(p_exam_id uuid)
-RETURNS uuid LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT teacher_id FROM exams WHERE id = p_exam_id LIMIT 1;
-$$;
-
--- 5. Recreate teacher SELECT policy for results (safe — drop first)
-DROP POLICY IF EXISTS "Teachers select own results" ON results;
-CREATE POLICY "Teachers select own results"
-ON results FOR SELECT TO authenticated
-USING (auth.uid() = get_exam_teacher_id(exam_id));
-
--- 6. Verify — you should see the INSERT policy in the output
-SELECT policyname, cmd, roles
-FROM pg_policies
-WHERE tablename = 'results'
-ORDER BY cmd;</div>
+          <div class="sql-block" id="sql11">-- Recommended production setup: run COMPLETE_SQL_SETUP.sql from top to bottom.
+-- It contains all v3.1 tables, policies, public student RPCs, admin RPCs,
+-- trigger functions, grants, indexes, migration steps, and verification queries.
+SELECT 'Run COMPLETE_SQL_SETUP.sql for the canonical HMG Academy CBT v3.1 database setup.' AS instruction;</div>
           <button class="btn-sm btn-outline" onclick="copySQL('sql11')" style="width:auto;padding:7px 14px;font-size:12px;">📋 Copy SQL</button>
         </div>
 
@@ -2223,6 +2301,40 @@ function decodeMeta(r){
   if(!r||!r.includes('|'))return{subject:r||'—',cls:'—',term:'—',topic:'—',type:'—',session:'—',passmark:50};
   const p=r.split('|');
   return{subject:p[0]||'—',cls:p[1]||'—',term:p[2]||'—',topic:p[3]||'—',type:p[4]||'—',session:p[5]||'—',passmark:parseInt(p[6])||50};
+}
+
+// ════════════════════════════════════════════
+// QUESTION DATA NORMALISER
+// Handles both the old JSON-string-in-jsonb format and the v3.1 native JSONB array.
+// This prevents crashes when old and new exams exist in the same Supabase project.
+// ════════════════════════════════════════════
+function parseQuestionData(raw){
+  if(Array.isArray(raw))return raw;
+  if(!raw)return [];
+  try{
+    let parsed=typeof raw==='string'?JSON.parse(raw):raw;
+    if(typeof parsed==='string')parsed=JSON.parse(parsed);
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){
+    console.warn('[CBT] Question data parse failed:',e);
+    return [];
+  }
+}
+
+function cloneQuestionData(raw){
+  return JSON.parse(JSON.stringify(parseQuestionData(raw)));
+}
+
+function applyQuestionMetadata(q,p){
+  // Optional CSV columns 15–17: Difficulty, Tags, Section/Learning Outcome.
+  // These fields power item-bank analytics and student-facing question badges.
+  const difficulty=cleanField(p[14]||'');
+  const tags=cleanField(p[15]||'');
+  const section=cleanField(p[16]||'');
+  if(difficulty)q.difficulty=difficulty;
+  if(tags)q.tags=tags.split('|').map(x=>x.trim()).filter(Boolean);
+  if(section)q.section=section;
+  return q;
 }
 
 // ════════════════════════════════════════════
@@ -2529,7 +2641,12 @@ async function handleAuth(type){
     const btn = document.getElementById('signup-btn');
     if(btn){ btn.disabled = true; btn.innerText = 'Creating account…'; }
     try{
-      await sbFetch('/auth/v1/signup', 'POST', { email, password });
+      const fullName=(document.getElementById('display-name')?.value||'').trim();
+      await sbFetch('/auth/v1/signup', 'POST', {
+        email,
+        password,
+        data:{ full_name: fullName || email.split('@')[0] }
+      });
       document.getElementById('verify-email').innerText = email;
       showScreen('verify');
     }catch(e){
@@ -2641,10 +2758,12 @@ async function handleAuth(type){
       // No profile row — create one as pending so admin can approve
       try{
         await sbFetch('/rest/v1/profiles', 'POST', {
-          id:       session.user.id,
-          email:    email,
-          status:   'pending',
-          is_admin: false
+          id:        session.user.id,
+          email:     email,
+          full_name: (document.getElementById('display-name')?.value||email.split('@')[0]).trim(),
+          role:      'teacher',
+          status:    'pending',
+          is_admin:  false
         });
         profileStatus = 'pending';
       }catch(createErr){
@@ -2895,7 +3014,7 @@ function splitCSVLine(line){
 }
 
 // Parse a full CSV text (with header row) into question objects
-// Extended format: Question, A, B, C, D, CorrectAnswer, Explanation, Type, Tolerance, Unit, Accept, MRQ_AON
+// Extended format: Question, A, B, C, D, CorrectAnswer, Explanation, Type, Tolerance, Unit, Accept, MRQ_AON, Pairs, Items, Difficulty, Tags, Section
 // Backward compatible — columns 8+ are optional
 function parseQuestionsCSV(text){
   text=text.replace(/^\uFEFF/,'');
@@ -2920,7 +3039,7 @@ function parseQuestionsCSV(text){
         const pairs=raw.filter(r=>(r.left||'').toUpperCase()!=='DISTRACTOR');
         const distractors=raw.filter(r=>(r.left||'').toUpperCase()==='DISTRACTOR').map(r=>r.right);
         if(!pairs.length)return;
-        results.push({q:qText,type:'matching',pairs,distractors,exp:cleanField(p[6]),ans:'',a:'',b:'',c:'',d:''});
+        results.push(applyQuestionMetadata({q:qText,type:'matching',pairs,distractors,exp:cleanField(p[6]),ans:'',a:'',b:'',c:'',d:''},p));
       }catch(e){console.warn('Matching parse error:',e);}
       return;
     }
@@ -2934,7 +3053,7 @@ function parseQuestionsCSV(text){
         if(!Array.isArray(items)||!items.length)return;
         // ans = identity index array [0,1,2,...] — correct order is natural order
         const ans=JSON.stringify(items.map((_,i)=>i));
-        results.push({q:qText,type:'ordering',items,exp:cleanField(p[6]),ans,a:'',b:'',c:'',d:''});
+        results.push(applyQuestionMetadata({q:qText,type:'ordering',items,exp:cleanField(p[6]),ans,a:'',b:'',c:'',d:''},p));
       }catch(e){console.warn('Ordering parse error:',e);}
       return;
     }
@@ -2948,7 +3067,7 @@ function parseQuestionsCSV(text){
       const accept=cleanField(p[10]); if(accept)q.accept=accept;
       if(type==='cloze' && (!Array.isArray(q.items)||!q.items.length) && q.ans)q.items=q.ans.split('|');
       if(type==='essay' && !q.items && accept)q.items={keywords:accept.split('|'),min_words:30};
-      results.push(q);return;
+      results.push(applyQuestionMetadata(q,p));return;
     }
 
     // All other types (mcq, mrq, tf, short, numeric)
@@ -2966,7 +3085,7 @@ function parseQuestionsCSV(text){
     if(p[9]!==undefined){const u=cleanField(p[9]);if(u)q.unit=u;}
     if(p[10]!==undefined){const a=cleanField(p[10]);if(a)q.accept=a;}
     if(p[11]!==undefined){q.mrq_aon=cleanField(p[11]).toLowerCase()==='true'||cleanField(p[11])==='1';}
-    if(q.ans||type==='short')results.push(q);
+    if(q.ans||type==='short')results.push(applyQuestionMetadata(q,p));
   });
   return results;
 }
@@ -3255,7 +3374,7 @@ function importQuestionsFromExam() {
     const exam = allExams.find(e => e.id === id);
     if(!exam || !exam.csv_data) return showToast('No questions found in this exam.');
     try {
-        const qList = JSON.parse(exam.csv_data);
+        const qList = parseQuestionData(exam.csv_data);
         if(!Array.isArray(qList)) return showToast('Invalid question data format.');
         questionsPool = questionsPool.concat(qList);
         renderQuestionsPreview();
@@ -3739,7 +3858,7 @@ async function createExam(){
     attempt_limit: document.getElementById('ex-limit').value,
     select_count:  document.getElementById('ex-count').value||0,
     code:          Math.random().toString(36).substring(2,8).toUpperCase(),
-    csv_data:      JSON.stringify(questionsPool),
+    csv_data:      questionsPool,
     teacher_id:    session.user.id,
     exam_mode:     examMode,
     is_open:       openNow,
@@ -3777,7 +3896,7 @@ async function loadExams(){
   allExams.forEach(exam=>{
     if(!exam.csv_data)return;
     try{
-      const qs=JSON.parse(exam.csv_data);
+      const qs=parseQuestionData(exam.csv_data);
       let dirty=false;
       qs.forEach(q=>{
         const qtype=(q.type||'mcq').toLowerCase();
@@ -3791,7 +3910,7 @@ async function loadExams(){
           if(cf!==q[k]){q[k]=cf;dirty=true;}
         });
       });
-      if(dirty)exam.csv_data=JSON.stringify(qs);
+      if(dirty)exam.csv_data=qs;
     }catch(e){}
   });
 
@@ -3965,7 +4084,7 @@ function _downloadTextFile(filename, content, type='text/plain'){
 
 function downloadQuestionTemplate(){
   const csv=[
-    'Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items',
+    'Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section',
     '"What is 2 + 2?","3","4","5","6","B","2 + 2 = 4.","mcq","","","","","",""',
     '"Which are products of photosynthesis?","Glucose","Water","Oxygen","Carbon dioxide","A,C","Glucose and oxygen are produced.","mrq","","","","false","",""',
     '"Lagos is the capital of Nigeria.","True","False","","","B","Nigeria capital is Abuja.","tf","","","","","",""',
@@ -3993,7 +4112,7 @@ function exportExamPackage(id){
   if(!exam)return showToast('Exam not found.');
   const m=decodeMeta(exam.subject);
   let qs=[];
-  try{qs=JSON.parse(exam.csv_data||'[]');}catch(e){}
+  qs=parseQuestionData(exam.csv_data);
   const pack={
     package_type:'HMG_CBT_EXAM_PACKAGE',
     version:'1.0',
@@ -4140,7 +4259,7 @@ function shareWhatsApp(code){
 
 function previewExam(id){
   const exam=allExams.find(e=>e.id===id);if(!exam)return;
-  const m=decodeMeta(exam.subject),qs=JSON.parse(exam.csv_data);
+  const m=decodeMeta(exam.subject),qs=parseQuestionData(exam.csv_data);
   document.getElementById('modal-title').innerText=`${m.subject} — ${m.type}`;
   const closeAtStr = exam.close_at ? ' · Closes '+formatCloseAt(exam.close_at) : '';
   document.getElementById('modal-meta').innerText=`${m.cls} · ${m.term}${m.topic!=='—'?' · '+m.topic:''} · ${qs.length} questions · Pass: ${m.passmark}%${closeAtStr}`;
@@ -4517,7 +4636,7 @@ function exportResults(){
       const ad=typeof r.answers_data==='string'?JSON.parse(r.answers_data):r.answers_data;
       const exam=allExams.find(e=>e.id===r.exam_id);
       if(exam&&exam.csv_data){
-        const qs=JSON.parse(exam.csv_data);let cc=0,ww=0,ss=0;
+        const qs=parseQuestionData(exam.csv_data);let cc=0,ww=0,ss=0;
         Object.keys(ad).forEach(i=>{
           const q=qs[parseInt(i)];if(!q)return;
           const av2=getAns(ad[i]);
@@ -4549,7 +4668,7 @@ function generateInsights(){
   const excelled=data.filter(r=>pct(r.score,r.total)>=80).sort((a,b)=>pct(b.score,b.total)-pct(a.score,a.total));
   // Hardest questions
   let hardestHTML='<span style="color:var(--text-muted);font-size:13px;">Select a specific exam to see hardest questions.</span>';
-  if(fExam){const exam=allExams.find(e=>e.id===fExam);if(exam&&exam.csv_data){const qs=JSON.parse(exam.csv_data);const wc=new Array(qs.length).fill(0),ac=new Array(qs.length).fill(0);data.forEach(r=>{if(!r.answers_data)return;const ad=typeof r.answers_data==='string'?JSON.parse(r.answers_data):r.answers_data;Object.keys(ad).forEach(i=>{const idx=parseInt(i);const av=getAns(ad[i]);if(av!==null)ac[idx]=(ac[idx]||0)+1;const q=qs[idx];if(q&&av){const pts=scoreQuestion(q,av);if(pts<1)wc[idx]=(wc[idx]||0)+1;}});});const hardest=qs.map((q,i)=>({q,i,wrong:wc[i]||0,attempts:ac[i]||0})).filter(x=>x.attempts>0).sort((a,b)=>b.wrong/b.attempts-a.wrong/a.attempts).slice(0,5);if(hardest.length)hardestHTML=hardest.map(x=>`<div style="padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:7px;"><div style="font-size:13px;font-weight:600;margin-bottom:3px;">Q${x.i+1}. ${escHtml(x.q.q)} <span style="font-size:10px;color:var(--text-muted);">[${(x.q.type||'mcq').toUpperCase()}]</span></div><div style="font-size:12px;color:var(--text-muted);">${x.wrong}/${x.attempts} students wrong (${Math.round((x.wrong/x.attempts)*100)}% error rate) · Correct: <strong style="color:var(--primary);">${escHtml(String(x.q.ans))}</strong></div></div>`).join('');}}  const classRef=className?` in ${className}`:'',termRef=termName?` (${termName})`:'',topicRef=topicName?` on "${topicName}"`:'';;
+  if(fExam){const exam=allExams.find(e=>e.id===fExam);if(exam&&exam.csv_data){const qs=parseQuestionData(exam.csv_data);const wc=new Array(qs.length).fill(0),ac=new Array(qs.length).fill(0);data.forEach(r=>{if(!r.answers_data)return;const ad=typeof r.answers_data==='string'?JSON.parse(r.answers_data):r.answers_data;Object.keys(ad).forEach(i=>{const idx=parseInt(i);const av=getAns(ad[i]);if(av!==null)ac[idx]=(ac[idx]||0)+1;const q=qs[idx];if(q&&av){const pts=scoreQuestion(q,av);if(pts<1)wc[idx]=(wc[idx]||0)+1;}});});const hardest=qs.map((q,i)=>({q,i,wrong:wc[i]||0,attempts:ac[i]||0})).filter(x=>x.attempts>0).sort((a,b)=>b.wrong/b.attempts-a.wrong/a.attempts).slice(0,5);if(hardest.length)hardestHTML=hardest.map(x=>`<div style="padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:7px;"><div style="font-size:13px;font-weight:600;margin-bottom:3px;">Q${x.i+1}. ${escHtml(x.q.q)} <span style="font-size:10px;color:var(--text-muted);">[${(x.q.type||'mcq').toUpperCase()}]</span></div><div style="font-size:12px;color:var(--text-muted);">${x.wrong}/${x.attempts} students wrong (${Math.round((x.wrong/x.attempts)*100)}% error rate) · Correct: <strong style="color:var(--primary);">${escHtml(String(x.q.ans))}</strong></div></div>`).join('');}}  const classRef=className?` in ${className}`:'',termRef=termName?` (${termName})`:'',topicRef=topicName?` on "${topicName}"`:'';;
   let reco='';
   if(avg>=80)reco=`Outstanding performance${classRef}${termRef}. Class averaged ${avg}% in ${subjectName}${topicRef}, ${avg-passmark}pp above the ${passmark}% pass mark. ${failBelow40>0?`Note: ${failBelow40} student${failBelow40>1?'s':''} still scored below 40% and need individual follow-up.`:'All students performed acceptably.'}`;
   else if(avg>=65)reco=`Good performance${classRef}${termRef}. The ${subjectName}${topicRef} average of ${avg}% is above the pass mark. ${passed} of ${n} students passed (${passRate}%). ${failBelow40>0?`${failBelow40} student${failBelow40>1?'s':''} scored below 40% and need targeted intervention. `:''}${nearMiss.length>0?`${nearMiss.length} student${nearMiss.length>1?'s are':' is'} near the pass mark — targeted revision could push them over.`:''}`;
@@ -4949,7 +5068,7 @@ function openDuplicateModal(id){
   const exam=allExams.find(e=>e.id===id);if(!exam)return;
   _dupExamId=id;
   const m=decodeMeta(exam.subject);
-  const qs=JSON.parse(exam.csv_data||'[]');
+  const qs=parseQuestionData(exam.csv_data);
   document.getElementById('dup-exam-info').innerHTML=`
     <div style="font-weight:700;font-size:14px;margin-bottom:6px;">${m.subject} — ${m.type}</div>
     <div style="font-size:12px;color:var(--text-muted);">${m.cls} · ${m.term}${m.topic!=='—'?' · '+m.topic:''} · ${qs.length} questions · ${exam.duration}min</div>`;
@@ -4965,7 +5084,7 @@ async function confirmDuplicate(){
   const payload={
     subject:encodeMeta('[COPY] '+m.subject,m.cls,m.term,m.topic,m.type,m.session,m.passmark),
     duration:exam.duration,attempt_limit:exam.attempt_limit,select_count:exam.select_count,
-    code:newCode,csv_data:exam.csv_data,teacher_id:session.user.id,
+    code:newCode,csv_data:parseQuestionData(exam.csv_data),teacher_id:session.user.id,
     exam_mode:exam.exam_mode,is_open:false,close_at:null
   };
   try{
@@ -5029,7 +5148,7 @@ function openEditExamModal(id) {
   
   // Count questions
   let qs = [];
-  try { qs = JSON.parse(exam.csv_data || '[]'); } catch(e) {}
+  qs = parseQuestionData(exam.csv_data);
   document.getElementById('edit-ex-qcount').innerText = qs.length;
   
   // Count submissions
@@ -5151,11 +5270,11 @@ async function appendCSVToEditExam() {
       if (!exam) return showToast('Exam not found.');
       
       let existingQuestions = [];
-      try { existingQuestions = JSON.parse(exam.csv_data || '[]'); } catch(err) {}
+      existingQuestions = parseQuestionData(exam.csv_data);
       
       const mergedQuestions = [...existingQuestions, ...newQuestions];
       
-      const updateData = { csv_data: JSON.stringify(mergedQuestions) };
+      const updateData = { csv_data: mergedQuestions };
       await sbFetch(`/rest/v1/exams?id=eq.${_editExamId}`, 'PATCH', updateData);
       
       exam.csv_data = JSON.stringify(mergedQuestions);
@@ -5180,7 +5299,7 @@ async function addSingleQuestionToEditExam() {
   if (!exam) return showToast('Exam not found.');
   
   let existingQuestions = [];
-  try { existingQuestions = JSON.parse(exam.csv_data || '[]'); } catch(err) {}
+  existingQuestions = parseQuestionData(exam.csv_data);
   
   const newQ = {
     q: 'New Question — edit this text',
@@ -5204,7 +5323,7 @@ async function addSingleQuestionToEditExam() {
   
   existingQuestions.push(newQ);
   
-  const updateData = { csv_data: JSON.stringify(existingQuestions) };
+  const updateData = { csv_data: existingQuestions };
   await sbFetch(`/rest/v1/exams?id=eq.${_editExamId}`, 'PATCH', updateData);
   
   exam.csv_data = JSON.stringify(existingQuestions);
@@ -5224,7 +5343,7 @@ function viewQBank(id){
   const exam=allExams.find(e=>e.id===id);if(!exam)return;
   _qbankExamId=id;
   // Deep copy so edits don't mutate allExams until saved
-  _qbankQuestions=JSON.parse(JSON.stringify(JSON.parse(exam.csv_data||'[]')));
+  _qbankQuestions=cloneQuestionData(exam.csv_data);
   _qbankOriginal =JSON.stringify(_qbankQuestions);
   const m=decodeMeta(exam.subject);
   document.getElementById('qbank-title').innerText=`📚 Question Bank — ${m.subject}`;
@@ -5569,10 +5688,10 @@ async function saveQBankEdits(){
 
   try{
     await sbFetch(`/rest/v1/exams?id=eq.${_qbankExamId}`,'PATCH',{
-      csv_data: JSON.stringify(_qbankQuestions)
+      csv_data: _qbankQuestions
     });
     const idx=allExams.findIndex(e=>e.id===_qbankExamId);
-    if(idx>-1)allExams[idx].csv_data=JSON.stringify(_qbankQuestions);
+    if(idx>-1)allExams[idx].csv_data=_qbankQuestions;
     _qbankOriginal=JSON.stringify(_qbankQuestions);
 
     const m=decodeMeta(allExams[idx]?.subject||'');
@@ -5831,7 +5950,7 @@ function renderResults(data){
       const ad=typeof r.answers_data==='string'?JSON.parse(r.answers_data):r.answers_data;
       const exam=allExams.find(e=>e.id===r.exam_id);
       if(exam&&exam.csv_data){
-        const qs=JSON.parse(exam.csv_data);
+        const qs=parseQuestionData(exam.csv_data);
         let scoreAcc=0;c=0;w=0;sk=0;
         Object.keys(ad).forEach(idx=>{
           const q=qs[parseInt(idx)];if(!q)return;
@@ -6013,7 +6132,7 @@ async function viewAnswers(resultId){
     return;
   }
 
-  const qs=JSON.parse(exam.csv_data);
+  const qs=parseQuestionData(exam.csv_data);
 
   // ── _isCorrectForQ helper ────────────────────────────────────────────────
   const _isCorrectForQ=function(q,sa,adIdx){
@@ -6521,7 +6640,7 @@ function exportItemAnalysisCSV(){
   const exam=allExams.find(e=>e.id===examIds[0]);
   if(!exam||!exam.csv_data)return showToast('Question bank not found for this exam.');
   const m=decodeMeta(exam.subject);
-  let qs=[];try{qs=JSON.parse(exam.csv_data||'[]');}catch(e){}
+  let qs=[];qs=parseQuestionData(exam.csv_data);
   if(!qs.length)return showToast('No questions found.');
   const rows=qs.map((q,i)=>({
     idx:i+1,type:(q.type||'mcq'),question:q.q||'',attempted:0,correct:0,partial:0,wrong:0,skipped:0,time:0
