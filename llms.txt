@@ -1,0 +1,29 @@
+# HMG Academy CBT Pro
+
+HMG Academy CBT Pro is a free, installable browser-based computer-based testing platform by HMG Concepts / HMG Academy for schools, teachers, tutors, training centres, and students.
+
+Official CBT platform: https://hmgacademyhub.github.io/cbtplatform/
+HMG Academy: https://hmgacademy.pages.dev/
+HMG Concepts: https://hmgconcepts.pages.dev/
+Contact: hismarvellousgrace@gmail.com, +234 810 086 6322, +234 907 790 7677
+Founder: Adewale Samson Adeagbo
+
+Key features:
+- Teacher dashboard for creating exams
+- Student exam portal with access codes and links
+- Admin panel for platform management
+- 17 question types
+- Anti-cheat controls
+- Result analytics and CSV export
+- Verifiable certificates
+- PWA install support for mobile and desktop
+- No paid AI API required
+
+Useful pages:
+- /index.html — landing page and HMG ecosystem links
+- /teacher.html — teacher dashboard
+- /student.html — student exam portal
+- /admin.html — admin panel
+- /certificate.html — certificate verification
+- /feature_guide.html — detailed platform guide
+- /deployment_validator.html — deployment checks

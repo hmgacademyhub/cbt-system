@@ -31,3 +31,8 @@ Add `toggleMathKeyboard()`, `switchMkTab(tab)`, and `insertSymbol(symbol)` funct
 
 ### Auto-Show Logic
 Call `showMathKeyboardBtn()` in `showQ()` to show the button only for typed question types.
+
+
+## CBT v3 update
+
+The Math/Science keyboard is now available during every active exam, including older exams created before the `math_keyboard` database field existed. It should not be limited only to newly created typed-answer exams.

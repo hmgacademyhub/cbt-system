@@ -318,3 +318,12 @@ The SQL is designed to be idempotent and preserves data.
 ## 14. No paid AI API policy
 
 The platform deliberately avoids AI API calls because paid APIs are not cost-effective for many schools. Essay scoring and insights are transparent rule-based logic in the browser. Teachers should still review high-stakes essays manually.
+
+
+## CBT v3 note
+
+Before deployment, run `COMPLETE_SQL_SETUP.sql`, then upload all static files. CBT v3 includes a rewritten `PROMPT_TEMPLATE.md` for manual AI-assisted CSV question generation, a Teacher Dashboard reference for all 17 question types, and a downloadable CSV template with all 17 type examples. No runtime AI API is used.
+## Search engine and PWA deployment checks
+
+After deployment, verify `/robots.txt`, `/sitemap.xml`, `/manifest.webmanifest`, and `/sw.js` load publicly. Submit the sitemap URL to Google Search Console and Bing Webmaster Tools. Test PWA installation on Android Chrome, iPhone Safari, and desktop Chrome/Edge.
+

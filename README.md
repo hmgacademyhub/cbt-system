@@ -224,3 +224,18 @@ HMG Academy CBT Pro is part of the HMG Technologies mission under HMG Concepts: 
 ## 10. Complete file inventory
 
 A complete file-by-file inventory is available in `FILE_INVENTORY.md`.
+
+
+## 2026 Enterprise repair package
+
+This repository now includes granular anti-cheat selection, optional proctoring, robust RPC-based result saving, verifiable certificates, expanded working Math/Science keyboard, and updated SQL. Run `COMPLETE_SQL_SETUP.sql` in Supabase before deploying the updated static files to Vercel or Cloudflare Pages.
+## CBT v2 package
+
+CBT v2 adds more question types, always-on Math/Science keyboard availability during exams, and admin-supervised teacher dashboard control mode. See `ADVANCED_QUESTION_TYPES_GUIDE.md` and `CBT_V2_AUDIT_AND_DEPLOYMENT_STEPS.md`.
+## CBT v3 authoring package
+
+CBT v3 updates the teacher question-type reference, CSV template download, and `PROMPT_TEMPLATE.md`. The prompt template is now a practical question-bank generation prompt file for teachers who want an AI assistant to produce manual CSV question banks. It supports both the 11 core types and the full 17-type enterprise set.
+## SEO, PWA and lead generation
+
+The platform includes `robots.txt`, `sitemap.xml`, `llms.txt`, improved PWA manifest metadata, service worker caching, Open Graph/Twitter metadata, JSON-LD structured data, and landing-page lead links to the HMG Concepts ecosystem. See `SEO_PWA_LEAD_GENERATION.md`.
+

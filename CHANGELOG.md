@@ -82,3 +82,35 @@
 - Student countdown timer.
 - Basic results and exports.
 - Supabase backend integration.
+
+## 2026-06-23 — Enterprise audit repair package
+
+- Added granular per-exam anti-cheat selection: tab/app switch, blur, copy/paste, right-click, fullscreen, devtools, camera proctoring, audio monitoring, and violation limit.
+- Changed camera proctoring from forced/default to teacher-controlled.
+- Fixed the on-screen Math/Science keyboard insertion bug by tracking the last active answer field and preventing keyboard buttons from stealing focus. Added many extra mathematics, chemistry, physics, Greek, superscript, subscript, set, logic, and unit symbols.
+- Added robust `submit_student_result(jsonb)` Supabase RPC with REST fallback so student submissions are saved even when direct anonymous insert/RLS behaviour differs.
+- Added `verify_certificate(text)` RPC and certificate validity support. Certificate page now verifies from the result record and detects disabled/expired certificates.
+- Added database fields for `anti_cheat_config`, `certificate_enabled`, and `certificate_valid_days`.
+- Updated deployment validation and documentation to reflect current enterprise features.
+## CBT v2 — 2026-06-23
+
+- Added six more question types: assertion_reason, case_study, image_mcq, matrix, hot_text, and code.
+- Made Math/Science keyboard always visible during exams, including older exams created before the keyboard setting existed.
+- Added admin-supervised teacher impersonation/control mode.
+- Added Admin Panel controls to open/lock any exam and clear all results for a selected exam.
+- Added ADVANCED_QUESTION_TYPES_GUIDE.md and CBT_V2_AUDIT_AND_DEPLOYMENT_STEPS.md.
+## CBT v3 — 2026-06-23
+
+- Reworked `PROMPT_TEMPLATE.md` into practical AI question-bank generation prompts for manual CSV creation.
+- Added prompt templates for 11 core types and all 17 CBT v3 types.
+- Updated Teacher Dashboard question-type reference to list and explain all 17 supported types.
+- Updated downloadable question CSV template to include examples for all 17 question types.
+- Updated documentation files to reflect the current question-type and enterprise-feature set.
+## SEO/PWA lead generation update — 2026-06-23
+
+- Added `robots.txt`, `sitemap.xml`, `llms.txt`, and `browserconfig.xml` for search engine discovery and AI/search assistant context.
+- Added SEO, Open Graph, Twitter Card and JSON-LD structured data to the landing page.
+- Added HMG Concepts ecosystem lead-generation section with links to HMG Academy, HMG Concepts, project enquiry and WhatsApp enquiry.
+- Improved PWA install metadata and added a landing-page install CTA plus device-specific install instructions.
+- Updated `_headers` and service worker cache list for SEO/PWA support files.
+

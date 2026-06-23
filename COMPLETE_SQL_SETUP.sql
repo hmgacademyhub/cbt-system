@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS public.exams (
   instructions    TEXT        NOT NULL DEFAULT '',
   is_archived     BOOLEAN     NOT NULL DEFAULT false,
   cert_code       TEXT        NOT NULL DEFAULT '',
+  proctoring      BOOLEAN     NOT NULL DEFAULT false,
+  math_keyboard   BOOLEAN     NOT NULL DEFAULT true,
+  anti_cheat_config JSONB     NOT NULL DEFAULT '{"tab_switch":true,"window_blur":true,"copy_paste":true,"right_click":true,"fullscreen":true,"devtools":true,"proctoring":false,"audio":false,"max_violations":5}'::jsonb,
+  certificate_enabled BOOLEAN NOT NULL DEFAULT true,
+  certificate_valid_days INTEGER NOT NULL DEFAULT 0,
   start_at        TIMESTAMPTZ,
   close_at        TIMESTAMPTZ,
   csv_data        JSONB       NOT NULL DEFAULT '[]'::jsonb,
@@ -107,6 +112,11 @@ ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS release_results BOOLEAN     NO
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS instructions    TEXT        NOT NULL DEFAULT '';
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS is_archived     BOOLEAN     NOT NULL DEFAULT false;
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS cert_code       TEXT        NOT NULL DEFAULT '';
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS proctoring      BOOLEAN     NOT NULL DEFAULT false;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS math_keyboard   BOOLEAN     NOT NULL DEFAULT true;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS anti_cheat_config JSONB     NOT NULL DEFAULT '{"tab_switch":true,"window_blur":true,"copy_paste":true,"right_click":true,"fullscreen":true,"devtools":true,"proctoring":false,"audio":false,"max_violations":5}'::jsonb;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS certificate_enabled BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS certificate_valid_days INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE public.results ADD COLUMN IF NOT EXISTS student_id_ref  TEXT DEFAULT '';
 ALTER TABLE public.results ADD COLUMN IF NOT EXISTS student_type    TEXT DEFAULT 'open';
@@ -140,6 +150,7 @@ UPDATE public.exams SET release_results = true WHERE release_results IS NULL;
 UPDATE public.exams SET instructions = '' WHERE instructions IS NULL;
 UPDATE public.exams SET is_archived = false WHERE is_archived IS NULL;
 UPDATE public.exams SET cert_code = '' WHERE cert_code IS NULL;
+UPDATE public.exams SET anti_cheat_config = jsonb_build_object('tab_switch',true,'window_blur',true,'copy_paste',true,'right_click',true,'fullscreen',true,'devtools',true,'proctoring',COALESCE(proctoring,false),'audio',false,'max_violations',5) WHERE anti_cheat_config IS NULL;
 UPDATE public.results SET violation_log = '[]'::jsonb WHERE violation_log IS NULL;
 UPDATE public.results SET cert_code = '' WHERE cert_code IS NULL;
 
@@ -254,8 +265,8 @@ AS $$
     WHERE e.id = p_exam_id
       AND e.is_archived = false
       AND e.is_open = true
-      AND (e.start_at IS NULL OR e.start_at <= NOW())
-      AND (e.close_at IS NULL OR e.close_at > NOW())
+      AND (e.start_at IS NULL OR e.start_at <= NOW() + INTERVAL '1 hour')
+      AND (e.close_at IS NULL OR e.close_at + INTERVAL '12 hours' > NOW())
   );
 $$;
 
@@ -461,6 +472,8 @@ CREATE TRIGGER update_profiles_updated_at
 DROP FUNCTION IF EXISTS public.get_public_exam_by_code(TEXT) CASCADE;
 DROP FUNCTION IF EXISTS public.verify_student_for_exam(UUID, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS public.get_exam_attempt_count(UUID, TEXT, TEXT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.submit_student_result(JSONB) CASCADE;
+DROP FUNCTION IF EXISTS public.verify_certificate(TEXT) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.get_public_exam_by_code(p_code TEXT)
 RETURNS TABLE (
@@ -475,6 +488,10 @@ RETURNS TABLE (
   negative_mark   NUMERIC,
   release_results BOOLEAN,
   instructions    TEXT,
+  anti_cheat_config JSONB,
+  proctoring      BOOLEAN,
+  math_keyboard   BOOLEAN,
+  certificate_enabled BOOLEAN,
   start_at        TIMESTAMPTZ,
   close_at        TIMESTAMPTZ,
   csv_data        JSONB,
@@ -498,6 +515,10 @@ AS $$
     e.negative_mark,
     e.release_results,
     e.instructions,
+    e.anti_cheat_config,
+    e.proctoring,
+    e.math_keyboard,
+    e.certificate_enabled,
     e.start_at,
     e.close_at,
     CASE
@@ -556,6 +577,97 @@ AS $$
        AND lower(trim(r.student_class)) = lower(trim(p_student_class)))
     );
 $$;
+
+
+
+CREATE OR REPLACE FUNCTION public.submit_student_result(p_payload JSONB)
+RETURNS TABLE (saved BOOLEAN, result_id UUID, cert_code TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_exam_id UUID := (p_payload->>'exam_id')::UUID;
+  v_cert TEXT := upper(COALESCE(NULLIF(p_payload->>'cert_code',''), substring(replace(gen_random_uuid()::text,'-','') from 1 for 10)));
+  v_id UUID;
+BEGIN
+  IF v_exam_id IS NULL OR NOT public.is_exam_open_for_submission(v_exam_id) THEN
+    RAISE EXCEPTION 'Exam is not open for submission or exam_id is invalid.';
+  END IF;
+
+  INSERT INTO public.results(
+    exam_id, student_name, student_class, student_id_ref, student_type,
+    score, total, correct_count, wrong_count, skipped_count, attempt_number,
+    time_taken, answers_data, violations, violation_log, proctor_data, cert_code
+  ) VALUES (
+    v_exam_id,
+    LEFT(COALESCE(p_payload->>'student_name',''), 200),
+    LEFT(COALESCE(p_payload->>'student_class',''), 120),
+    NULLIF(LEFT(COALESCE(p_payload->>'student_id_ref',''), 120), ''),
+    COALESCE(NULLIF(p_payload->>'student_type',''), 'open'),
+    COALESCE((p_payload->>'score')::NUMERIC, 0),
+    COALESCE((p_payload->>'total')::INTEGER, 0),
+    NULLIF(p_payload->>'correct_count','')::INTEGER,
+    NULLIF(p_payload->>'wrong_count','')::INTEGER,
+    NULLIF(p_payload->>'skipped_count','')::INTEGER,
+    COALESCE(NULLIF(p_payload->>'attempt_number','')::INTEGER, 1),
+    COALESCE(NULLIF(p_payload->>'time_taken','')::INTEGER, 0),
+    COALESCE(p_payload->'answers_data', '{}'::jsonb),
+    COALESCE(NULLIF(p_payload->>'violations','')::INTEGER, 0),
+    COALESCE(p_payload->'violation_log', '[]'::jsonb),
+    p_payload->'proctor_data',
+    v_cert
+  ) RETURNING id INTO v_id;
+
+  RETURN QUERY SELECT true, v_id, v_cert;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.verify_certificate(p_cert_code TEXT)
+RETURNS TABLE (
+  cert_code TEXT,
+  student_name TEXT,
+  student_class TEXT,
+  subject TEXT,
+  score NUMERIC,
+  total INTEGER,
+  percentage NUMERIC,
+  grade TEXT,
+  issued_at TIMESTAMPTZ,
+  issuer_name TEXT,
+  is_valid BOOLEAN
+)
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT
+    r.cert_code,
+    r.student_name,
+    r.student_class,
+    split_part(e.subject, '|', 1) AS subject,
+    r.score,
+    r.total,
+    ROUND((r.score / NULLIF(r.total,0)) * 100, 2) AS percentage,
+    CASE
+      WHEN r.total <= 0 THEN 'UNSCORED'
+      WHEN (r.score / NULLIF(r.total,0)) * 100 >= 70 THEN 'DISTINCTION'
+      WHEN (r.score / NULLIF(r.total,0)) * 100 >= COALESCE(CASE WHEN split_part(e.subject,'|',7) ~ '^[0-9]+$' THEN split_part(e.subject,'|',7)::INTEGER END,50) THEN 'PASS'
+      ELSE 'NOT PASSED'
+    END AS grade,
+    r.created_at AS issued_at,
+    COALESCE(p.full_name, p.email, 'HMG Academy') AS issuer_name,
+    (e.certificate_enabled = true AND (e.certificate_valid_days = 0 OR r.created_at + (e.certificate_valid_days || ' days')::interval >= NOW())) AS is_valid
+  FROM public.results r
+  JOIN public.exams e ON e.id = r.exam_id
+  LEFT JOIN public.profiles p ON p.id = e.teacher_id
+  WHERE upper(r.cert_code) = upper(trim(p_cert_code))
+    AND COALESCE(r.cert_code,'') <> ''
+  ORDER BY r.created_at DESC
+  LIMIT 1;
+$$;
+
 
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 10: ADMIN RPC FUNCTIONS
@@ -827,6 +939,8 @@ GRANT EXECUTE ON FUNCTION public.get_public_exam_by_code(TEXT) TO anon, authenti
 GRANT EXECUTE ON FUNCTION public.verify_student_for_exam(UUID, TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_exam_attempt_count(UUID, TEXT, TEXT, TEXT) TO anon, authenticated;
 
+REVOKE ALL ON FUNCTION public.submit_student_result(JSONB) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.verify_certificate(TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_all_profiles() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_all_exams() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_all_results() FROM PUBLIC, anon, authenticated;
@@ -836,6 +950,8 @@ REVOKE ALL ON FUNCTION public.admin_delete_profile(UUID) FROM PUBLIC, anon, auth
 REVOKE ALL ON FUNCTION public.admin_get_platform_stats() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_exam_results(UUID) FROM PUBLIC, anon, authenticated;
 
+GRANT EXECUTE ON FUNCTION public.submit_student_result(JSONB) TO anon;
+GRANT EXECUTE ON FUNCTION public.verify_certificate(TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_profiles() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_exams() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_results() TO authenticated;

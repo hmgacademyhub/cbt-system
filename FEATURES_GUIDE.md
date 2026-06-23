@@ -144,3 +144,8 @@ Use `Accept` or JSON rubric in `Items`:
 - Essay scoring is rule-based and should be manually reviewed for high-stakes exams.
 - Static hosting cannot securely hide all frontend logic; security-critical checks must stay in Supabase SQL/RLS/RPC.
 - Exam links/codes should be treated like private access tokens.
+
+
+## CBT v3 note
+
+Before deployment, run `COMPLETE_SQL_SETUP.sql`, then upload all static files. CBT v3 includes a rewritten `PROMPT_TEMPLATE.md` for manual AI-assisted CSV question generation, a Teacher Dashboard reference for all 17 question types, and a downloadable CSV template with all 17 type examples. No runtime AI API is used.

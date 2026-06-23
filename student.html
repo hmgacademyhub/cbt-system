@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>HMG Academy CBT | Student Portal</title>
     <link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="assets/hmg-academy-logo.png">
 <link rel="apple-touch-icon" href="assets/hmg-academy-logo.png">
     <meta name="theme-color" content="#10b981">
@@ -220,6 +222,8 @@
 
         /* ═══ FULL SCIENTIFIC CALCULATOR ═══ */
         #calc-btn{position:fixed;bottom:20px;right:20px;background:var(--primary);color:#000;border-radius:50%;font-size:20px;cursor:pointer;z-index:9000;width:54px;height:54px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(16,185,129,0.4);border:none;padding:0;}
+        #math-kbd-btn{position:fixed;bottom:20px;right:84px;background:#3b82f6;color:#fff;border-radius:50%;font-size:20px;cursor:pointer;z-index:9000;width:54px;height:54px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(59,130,246,0.4);border:none;padding:0;font-weight:bold;}
+
         #calculator{position:fixed;bottom:86px;right:20px;width:340px;background:#0a0a0a;border:1px solid #222;border-radius:18px;padding:14px;display:none;z-index:9000;box-shadow:0 20px 60px rgba(0,0,0,0.8);user-select:none;}
         .calc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
         .calc-title{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:1px;}
@@ -439,6 +443,9 @@
 
 <!-- CALCULATOR -->
 <button id="calc-btn" class="no-print hidden" onclick="toggleCalc()" title="Scientific Calculator">🧮</button>
+<button id="math-kbd-btn" class="no-print hidden" onclick="toggleMathKbd()" title="Math & Science Symbols">Σ</button>
+
+<!-- ═══ SCIENTIFIC CALCULATOR ═══ -->
 <div id="calculator" class="no-print">
   <div class="calc-header">
     <span class="calc-title">🔬 Sci-Calc</span>
@@ -514,6 +521,100 @@
   <div class="calc-history-panel" id="calc-history-panel" style="display:none;">
     <div id="calc-history-list"></div>
   </div>
+</div>
+
+<!-- ═══ MATH/SCIENCE KEYBOARD ═══ -->
+<div id="math-kbd" class="no-print" style="display:none;position:fixed;bottom:84px;right:84px;width:340px;background:#09090b;border:1px solid #27272a;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:9001;flex-direction:column;overflow:hidden;">
+  <div style="background:#18181b;padding:10px 14px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #27272a;">
+    <span>Math & Science Symbols</span>
+    <span style="cursor:pointer;color:#a1a1aa;padding:0 5px;" onclick="toggleMathKbd()">✕</span>
+  </div>
+  <div style="padding:10px;display:grid;grid-template-columns:repeat(8, 1fr);gap:6px;max-height:260px;overflow:auto;">
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('±')">±</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∓')">∓</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('×')">×</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('÷')">÷</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('·')">·</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('≈')">≈</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('≠')">≠</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('≡')">≡</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('≤')">≤</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('≥')">≥</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('&lt;')">&lt;</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('&gt;')">&gt;</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∞')">∞</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('√')">√</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∛')">∛</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∜')">∜</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('π')">π</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('θ')">θ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('α')">α</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('β')">β</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('γ')">γ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('δ')">δ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('λ')">λ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('μ')">μ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('Ω')">Ω</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('ω')">ω</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('Δ')">Δ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∇')">∇</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∂')">∂</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∫')">∫</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∑')">∑</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∏')">∏</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∈')">∈</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∉')">∉</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∪')">∪</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∩')">∩</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('⊂')">⊂</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('⊆')">⊆</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∀')">∀</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∃')">∃</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('⇒')">⇒</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('⇔')">⇔</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('→')">→</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('←')">←</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('↔')">↔</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('°')">°</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('′')">′</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('″')">″</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('²')">²</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('³')">³</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('⁴')">⁴</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₀')">₀</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₁')">₁</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₂')">₂</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₃')">₃</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₄')">₄</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₅')">₅</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₆')">₆</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₇')">₇</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₈')">₈</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₉')">₉</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('¹')">¹</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('½')">½</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('¼')">¼</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('¾')">¾</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('⁄')">⁄</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('ₙ')">ₙ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('ₓ')">ₓ</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₊')">₊</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('₋')">₋</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('H₂O')">H₂O</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('CO₂')">CO₂</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('O₂')">O₂</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('Na⁺')">Na⁺</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('Cl⁻')">Cl⁻</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('e⁻')">e⁻</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('pH')">pH</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('∆H')">∆H</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('M')">M</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('mol')">mol</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('kg')">kg</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('m²')">m²</button>
+    <button class="calc-btn num math-symbol-key" onmousedown="event.preventDefault()" onclick="insertMathSymbol('m³')">m³</button>
+  </div>
+  <div style="padding:0 10px 10px;font-size:11px;color:#a1a1aa;text-align:center;">Click a symbol to insert it into your active answer box.</div>
 </div>
 
 <!-- ═══ CONFIRM SUBMIT MODAL ═══ -->
@@ -806,7 +907,8 @@
         </div>
         <div id="integrity-summary"></div>
         <div class="action-row no-print">
-            <button class="export-btn" onclick="exportPDF()">📄 Export PDF</button>
+            <button class="export-btn" onclick="exportPDF()">📄 Export Result PDF</button>
+            <button class="export-btn" onclick="window.open('certificate.html?code=' + (document.getElementById('cert-code').innerText), '_blank')" style="background:rgba(59,130,246,0.15);color:var(--info);border:1px solid rgba(59,130,246,0.4);">🎓 Print Certificate</button>
             <button class="export-btn" onclick="shareResult()" style="background:rgba(16,185,129,0.15);color:var(--primary);border:1px solid rgba(16,185,129,0.4);">🔗 Share Result</button>
         </div>
     </div>
@@ -835,9 +937,11 @@ let finalStudentClass='';      // resolved class going into submit
 let finalStudentId='';         // school student ID (empty for open mode)
 
 // ═══ ANTI-CHEAT STATE ═══
-const MAX_VIOLATIONS=3;
+let MAX_VIOLATIONS=5;
+let antiCheatConfig={tab_switch:true,window_blur:true,copy_paste:true,right_click:true,fullscreen:true,devtools:true,proctoring:false,audio:false,max_violations:5};
 let violationCount=0, violationLog=[], violationPending=false;
 let isFullscreen=false, blurCount=0;
+let _lastAnswerInput=null;
 
 const V={
     TAB_SWITCH:'Tab / App Switch',WINDOW_BLUR:'Window Lost Focus',
@@ -872,6 +976,38 @@ function parseQuestionData(raw){
         return [];
     }
 }
+
+
+function normalizeAntiCheatConfig(examObj){
+    let cfg=examObj?.anti_cheat_config||null;
+    if(typeof cfg==='string'){try{cfg=JSON.parse(cfg);}catch(e){cfg=null;}}
+    cfg=cfg||{};
+    return {
+        tab_switch: cfg.tab_switch!==false,
+        window_blur: cfg.window_blur!==false,
+        copy_paste: cfg.copy_paste!==false,
+        right_click: cfg.right_click!==false,
+        fullscreen: cfg.fullscreen!==false,
+        devtools: cfg.devtools!==false,
+        proctoring: cfg.proctoring===true || examObj?.proctoring===true,
+        audio: cfg.audio===true,
+        max_violations: Math.max(1,Math.min(20,Number(cfg.max_violations||5)))
+    };
+}
+function applyExamIntegritySettings(){
+    antiCheatConfig=normalizeAntiCheatConfig(exam);
+    MAX_VIOLATIONS=antiCheatConfig.max_violations;
+    const kbtn=document.getElementById('math-kbd-btn');
+    if(kbtn)kbtn.classList.toggle('hidden', !examActive);
+}
+function isAntiCheatEnabled(name){return antiCheatConfig && antiCheatConfig[name]!==false;}
+
+document.addEventListener('focusin',e=>{
+    const el=e.target;
+    if(el && (el.matches?.('input.short-answer-input,input.cloze-input,input.multi-num-input,input.numeric-input,textarea.essay-textarea') || (el.tagName==='TEXTAREA') || (el.tagName==='INPUT' && !['button','radio','checkbox','submit'].includes(el.type)))){
+        _lastAnswerInput=el;
+    }
+});
 
 async function sbRpc(name, body){
     const res=await fetch(`${SB_URL}/rest/v1/rpc/${name}`,{
@@ -1077,6 +1213,7 @@ async function init(){
         const data=await fetchPublicExamByCode(code);
         if(!data.length){showStatusMsg('Exam not found or not open. Check your exam code or ask your teacher to resend/re-open the link/code. <button onclick="showCodeEntry()" style="width:auto;margin-left:8px;padding:6px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;">Try another code</button>');return;}
         exam=data[0];
+        applyExamIntegritySettings();
         if(!exam.is_open){showStatusMsg('This exam is currently closed. Contact your teacher.');return;}
         if(exam.close_at && new Date(exam.close_at).getTime() <= Date.now()){
             showStatusMsg('This exam has reached its scheduled closing time. HMG Academy CBT is a product of HMG Concepts. Contact your teacher if you believe this is an error.');
@@ -1153,7 +1290,7 @@ function startWaitRoom(){
             document.getElementById('wait-room-overlay').classList.add('hidden');
             // Re-fetch so questions hidden before the start time are now delivered.
             fetchPublicExamByCode(exam.code).then(data=>{
-                if(data&&data.length)exam=data[0];
+                if(data&&data.length){exam=data[0];applyExamIntegritySettings();}
                 init_admission();
             }).catch(()=>init_admission());
         }else{
@@ -1292,8 +1429,9 @@ async function validateAndStart(mode){
 // START EXAM — face gate → countdown → begin
 // ═══════════════════════════════════════════
 function startExam(){
-    // Launch face capture gate first; it calls _launchCountdown() when done
-    launchFaceGate();
+    // Launch face capture gate only if teacher enabled camera proctoring.
+    if(isAntiCheatEnabled('proctoring')) launchFaceGate();
+    else _launchCountdown();
 }
 
 function _launchCountdown(){
@@ -1313,6 +1451,7 @@ function _launchCountdown(){
             document.getElementById('countdown-overlay').classList.add('hidden');
             document.getElementById('exam-card').classList.remove('hidden');
             document.getElementById('calc-btn').classList.remove('hidden');
+            applyExamIntegritySettings();
             _beginExam();
         }
     },1000);
@@ -1346,24 +1485,29 @@ function _beginExam(){
         if(timeLeft<=0)submitExam();
     },1000);
 
-    document.addEventListener('visibilitychange',handleVisibilityChange);
-    window.addEventListener('blur',handleWindowBlur);
+    if(isAntiCheatEnabled('tab_switch'))document.addEventListener('visibilitychange',handleVisibilityChange);
+    if(isAntiCheatEnabled('window_blur'))window.addEventListener('blur',handleWindowBlur);
     document.addEventListener('keydown',handleKeydown,true);
-    document.addEventListener('contextmenu',handleRightClick,true);
-    document.addEventListener('copy',handleCopy,true);
-    document.addEventListener('cut',handleCut,true);
-    document.addEventListener('paste',handlePaste,true);
-    document.addEventListener('selectstart',handleSelectStart,true);
-    requestFullscreen();
-    document.addEventListener('fullscreenchange',handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange',handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange',handleFullscreenChange);
+    if(isAntiCheatEnabled('right_click'))document.addEventListener('contextmenu',handleRightClick,true);
+    if(isAntiCheatEnabled('copy_paste')){
+        document.addEventListener('copy',handleCopy,true);
+        document.addEventListener('cut',handleCut,true);
+        document.addEventListener('paste',handlePaste,true);
+        document.addEventListener('selectstart',handleSelectStart,true);
+    }
+    if(isAntiCheatEnabled('fullscreen')){
+        requestFullscreen();
+        document.addEventListener('fullscreenchange',handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange',handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange',handleFullscreenChange);
+    }
     window.onbeforeunload=()=>'You are in the middle of an exam. Leaving will not pause your timer.';
     const restoredDraft=loadDraft();
     if(restoredDraft){showToastStudent('✅ Saved answers restored from this device.');}
     startDraftSave();
-    startProctoring();     // ← live camera + periodic snapshots + multi-face detection
-    startDevToolsTrap();   // ← devtools size-change detection
+    if(isAntiCheatEnabled('proctoring'))startProctoring();     // live camera + periodic snapshots + multi-face detection
+    if(isAntiCheatEnabled('devtools'))startDevToolsTrap();      // devtools size-change detection
+    if(isAntiCheatEnabled('audio'))startAudioMonitor();         // optional audio spike monitor
     renderWatermark();renderQNav();showQ();
 }
 
@@ -1416,9 +1560,9 @@ function dismissViolation(){document.getElementById('violation-overlay').classLi
 // ═══════════════════════════════════════════
 // ANTI-CHEAT HANDLERS
 // ═══════════════════════════════════════════
-function handleVisibilityChange(){if(!examActive)return;if(document.hidden)recordViolation(V.TAB_SWITCH,'document.hidden=true');}
+function handleVisibilityChange(){if(!examActive||!isAntiCheatEnabled('tab_switch'))return;if(document.hidden)recordViolation(V.TAB_SWITCH,'document.hidden=true');}
 function handleWindowBlur(){
-    if(!examActive)return;blurCount++;
+    if(!examActive||!isAntiCheatEnabled('window_blur'))return;blurCount++;
     setTimeout(()=>{if(!examActive)return;if(document.getElementById('calculator').style.display==='block')return;if(blurCount%2===1)recordViolation(V.WINDOW_BLUR,`blur #${blurCount}`);},400);
 }
 function _isTypingTarget(t){
@@ -1430,21 +1574,21 @@ function handleKeydown(e){
     const typing=_isTypingTarget(e.target);
 
     // Always block browser/system shortcuts that can leak or disrupt the exam.
-    if(ctrl&&e.key.toLowerCase()==='p'){e.preventDefault();e.stopPropagation();recordViolation(V.PRINT_KEY);return;}
-    if(ctrl&&e.key.toLowerCase()==='u'){e.preventDefault();e.stopPropagation();recordViolation(V.VIEW_SOURCE);return;}
+    if(isAntiCheatEnabled('devtools')&&ctrl&&e.key.toLowerCase()==='p'){e.preventDefault();e.stopPropagation();recordViolation(V.PRINT_KEY);return;}
+    if(isAntiCheatEnabled('devtools')&&ctrl&&e.key.toLowerCase()==='u'){e.preventDefault();e.stopPropagation();recordViolation(V.VIEW_SOURCE);return;}
     if(ctrl&&e.key.toLowerCase()==='s'){e.preventDefault();e.stopPropagation();return;}
-    if(e.key==='F12'){e.preventDefault();e.stopPropagation();recordViolation(V.DEVTOOLS_KEY);return;}
+    if(isAntiCheatEnabled('devtools')&&e.key==='F12'){e.preventDefault();e.stopPropagation();recordViolation(V.DEVTOOLS_KEY);return;}
     if(e.key==='F5'||(ctrl&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();return;}
-    if(e.key==='PrintScreen'){e.preventDefault();e.stopPropagation();recordViolation(V.SCREENSHOT);return;}
+    if(isAntiCheatEnabled('devtools')&&e.key==='PrintScreen'){e.preventDefault();e.stopPropagation();recordViolation(V.SCREENSHOT);return;}
     if(['F1','F2','F3','F4','F6','F7','F8','F9','F10','F11'].includes(e.key)){e.preventDefault();e.stopPropagation();return;}
 
     // In typed-answer fields, allow normal typing/editing; paste is still blocked by the paste listener.
     if(typing)return;
 
-    if(ctrl&&e.key.toLowerCase()==='c'){e.preventDefault();e.stopPropagation();recordViolation(V.COPY_ATTEMPT);return;}
-    if(ctrl&&e.key.toLowerCase()==='x'){e.preventDefault();e.stopPropagation();recordViolation(V.CUT_ATTEMPT);return;}
-    if(ctrl&&e.key.toLowerCase()==='a'){e.preventDefault();e.stopPropagation();recordViolation(V.SELECT_ALL);return;}
-    if(ctrl&&e.key.toLowerCase()==='v'){e.preventDefault();e.stopPropagation();recordViolation(V.PASTE);return;}
+    if(isAntiCheatEnabled('copy_paste')&&ctrl&&e.key.toLowerCase()==='c'){e.preventDefault();e.stopPropagation();recordViolation(V.COPY_ATTEMPT);return;}
+    if(isAntiCheatEnabled('copy_paste')&&ctrl&&e.key.toLowerCase()==='x'){e.preventDefault();e.stopPropagation();recordViolation(V.CUT_ATTEMPT);return;}
+    if(isAntiCheatEnabled('copy_paste')&&ctrl&&e.key.toLowerCase()==='a'){e.preventDefault();e.stopPropagation();recordViolation(V.SELECT_ALL);return;}
+    if(isAntiCheatEnabled('copy_paste')&&ctrl&&e.key.toLowerCase()==='v'){e.preventDefault();e.stopPropagation();recordViolation(V.PASTE);return;}
 
     // JAMB-style keyboard shortcuts for faster CBT practice.
     const key=e.key.length===1?e.key.toUpperCase():e.key;
@@ -1467,11 +1611,11 @@ function handleKeydown(e){
     if(key==='R'){e.preventDefault();toggleFlag();return;}
     if(key==='S'){e.preventDefault();openSubmitModal();return;}
 }
-function handleRightClick(e){if(!examActive)return;e.preventDefault();e.stopPropagation();recordViolation(V.RIGHT_CLICK,`at (${e.clientX},${e.clientY})`);return false;}
-function handleCopy(e){if(!examActive)return;e.preventDefault();e.stopPropagation();if(violationLog[violationLog.length-1]?.event!==V.COPY_ATTEMPT)recordViolation(V.COPY_ATTEMPT,'copy event');}
-function handleCut(e){if(!examActive)return;e.preventDefault();e.stopPropagation();}
-function handlePaste(e){if(!examActive)return;e.preventDefault();e.stopPropagation();}
-function handleSelectStart(e){if(!examActive)return;const t=e.target;const isCalc=t.closest('#calculator')||t.id==='calc-display';const isInput=t.tagName==='INPUT'||t.tagName==='TEXTAREA';if(!isCalc&&!isInput)e.preventDefault();}
+function handleRightClick(e){if(!examActive||!isAntiCheatEnabled('right_click'))return;e.preventDefault();e.stopPropagation();recordViolation(V.RIGHT_CLICK,`at (${e.clientX},${e.clientY})`);return false;}
+function handleCopy(e){if(!examActive||!isAntiCheatEnabled('copy_paste'))return;e.preventDefault();e.stopPropagation();if(violationLog[violationLog.length-1]?.event!==V.COPY_ATTEMPT)recordViolation(V.COPY_ATTEMPT,'copy event');}
+function handleCut(e){if(!examActive||!isAntiCheatEnabled('copy_paste'))return;e.preventDefault();e.stopPropagation();}
+function handlePaste(e){if(!examActive||!isAntiCheatEnabled('copy_paste'))return;e.preventDefault();e.stopPropagation();}
+function handleSelectStart(e){if(!examActive||!isAntiCheatEnabled('copy_paste'))return;const t=e.target;const isCalc=t.closest('#calculator')||t.id==='calc-display';const isInput=t.tagName==='INPUT'||t.tagName==='TEXTAREA';if(!isCalc&&!isInput)e.preventDefault();}
 
 // ═══════════════════════════════════════════
 // FLAG / BOOKMARK
@@ -1512,9 +1656,9 @@ function renderQNav(){
 // ═══════════════════════════════════════════
 function getQType(q){ return (q.type||'mcq').toLowerCase(); }
 function qTypeLabel(t){
-    return{mcq:'⊙ MCQ',mrq:'☑ Multiple Response',tf:'⟺ True / False',short:'✏ Short Answer',numeric:'# Numeric',matching:'⇌ Matching',ordering:'⇅ Ordering',cloze:'▣ Cloze / Multi-Blank',essay:'📝 Essay / Keyword Response',categorization:'🗂 Categorization',multi_numeric:'∑ Multi-Part Numeric'}[t]||'⊙ MCQ';
+    return{mcq:'⊙ MCQ',mrq:'☑ Multiple Response',tf:'⟺ True / False',short:'✏ Short Answer',numeric:'# Numeric',matching:'⇌ Matching',ordering:'⇅ Ordering',cloze:'▣ Cloze / Multi-Blank',essay:'📝 Essay / Keyword Response',categorization:'🗂 Categorization',multi_numeric:'∑ Multi-Part Numeric',assertion_reason:'🧩 Assertion–Reason',case_study:'📚 Case Study',image_mcq:'🖼 Image MCQ',matrix:'▦ Matrix/Grid',hot_text:'🔎 Hot Text',code:'💻 Code/Algorithm'}[t]||'⊙ MCQ';
 }
-function qTypeCls(t){return{mcq:'qtype-mcq',mrq:'qtype-mrq',tf:'qtype-tf',short:'qtype-short',numeric:'qtype-numeric',matching:'qtype-matching',ordering:'qtype-ordering',cloze:'qtype-cloze',essay:'qtype-essay',categorization:'qtype-categorization',multi_numeric:'qtype-multi_numeric'}[t]||'qtype-mcq';}
+function qTypeCls(t){return{mcq:'qtype-mcq',mrq:'qtype-mrq',tf:'qtype-tf',short:'qtype-short',numeric:'qtype-numeric',matching:'qtype-matching',ordering:'qtype-ordering',cloze:'qtype-cloze',essay:'qtype-essay',categorization:'qtype-categorization',multi_numeric:'qtype-multi_numeric',assertion_reason:'qtype-mrq',case_study:'qtype-essay',image_mcq:'qtype-mcq',matrix:'qtype-categorization',hot_text:'qtype-short',code:'qtype-essay'}[t]||'qtype-mcq';}
 
 // For MRQ: answers stored as sorted comma string e.g. "A,B,C"
 function mrqGetSelected(origKey){ const v=answers[origKey]; if(!v)return new Set(); return new Set(v.split(',').filter(Boolean)); }
@@ -1575,6 +1719,18 @@ function showQ(prevIndex){
         _renderCategorization(q, origKey, box);
     } else if(qtype==='multi_numeric'){
         _renderMultiNumeric(q, origKey, box);
+    } else if(qtype==='assertion_reason'){
+        _renderAssertionReason(q, origKey, box);
+    } else if(qtype==='case_study'){
+        _renderCaseStudy(q, origKey, box);
+    } else if(qtype==='image_mcq'){
+        _renderImageMCQ(q, origKey, box);
+    } else if(qtype==='matrix'){
+        _renderMatrix(q, origKey, box);
+    } else if(qtype==='hot_text'){
+        _renderHotText(q, origKey, box);
+    } else if(qtype==='code'){
+        _renderCodeAnswer(q, origKey, box);
     } else {
         _renderMCQ(q, origKey, box); // safe fallback
     }
@@ -1945,6 +2101,17 @@ function _renderMultiNumeric(q, origKey, box){
     }));
 }
 
+
+function _safeItems(q){ if(Array.isArray(q.items))return q.items; if(typeof q.items==='string'){try{return JSON.parse(q.items);}catch(e){return [];}} return []; }
+function _getOptionList(q, fallbackLetters='ABCD'){ const items=_safeItems(q); if(items.length&&typeof items[0]==='object'&&items[0].label)return items.map(o=>({letter:String(o.label).toUpperCase(),text:o.text||o.value||''})); if(items.length&&typeof items[0]==='string')return items.map((txt,i)=>({letter:String.fromCharCode(65+i),text:txt})); return fallbackLetters.split('').filter(l=>q[l.toLowerCase()]).map(l=>({letter:l,text:q[l.toLowerCase()]})); }
+function _renderChoiceList(q, origKey, box, letters='ABCD'){ const opts=_getOptionList(q,letters); const grid=document.createElement('div');grid.className='options-grid'; opts.forEach(o=>{const div=document.createElement('div');div.className='option-card'+(answers[origKey]===o.letter?' selected':'');div.innerHTML=`<span class="opt-letter">${escapeHtmlStudent(o.letter)}</span><span>${escapeHtmlStudent(o.text)}</span>`;div.onclick=()=>{answers[origKey]=o.letter;showQ();renderQNav();};grid.appendChild(div);}); box.appendChild(grid); }
+function _renderAssertionReason(q, origKey, box){ const items=_safeItems(q); const ar=(items&&typeof items[0]==='object'&&!items[0].label)?items[0]:{}; const assertion=ar.assertion||q.assertion||q.a||''; const reason=ar.reason||q.reason||q.b||''; if(assertion||reason){const panel=document.createElement('div');panel.className='match-hint';panel.innerHTML='<strong>Assertion:</strong> '+escapeHtmlStudent(assertion||'—')+'<br><strong>Reason:</strong> '+escapeHtmlStudent(reason||'—');box.appendChild(panel);} const opts=items.filter(x=>x&&x.label); q.items=opts.length?opts:[{label:'A',text:'Both Assertion and Reason are true, and Reason correctly explains Assertion.'},{label:'B',text:'Both Assertion and Reason are true, but Reason does not correctly explain Assertion.'},{label:'C',text:'Assertion is true, but Reason is false.'},{label:'D',text:'Assertion is false, but Reason is true.'},{label:'E',text:'Both Assertion and Reason are false.'}]; _renderChoiceList(q,origKey,box,'ABCDE'); }
+function _renderCaseStudy(q, origKey, box){ let meta={};try{meta=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const passage=meta.passage||q.passage||q.accept||''; if(passage){const div=document.createElement('div');div.className='match-hint';div.style.whiteSpace='pre-wrap';div.innerHTML='<strong>Case / Passage</strong><br>'+escapeHtmlStudent(passage);box.appendChild(div);} _renderChoiceList(q,origKey,box,'ABCD'); }
+function _renderImageMCQ(q, origKey, box){ let meta={};try{meta=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const src=meta.image||q.image||q.accept||''; if(src){const wrap=document.createElement('div');wrap.style.cssText='margin:10px 0 16px;text-align:center;';wrap.innerHTML='<img src="'+escapeHtmlStudent(src)+'" alt="Question image" style="max-width:100%;max-height:320px;border-radius:12px;border:1px solid var(--border);object-fit:contain;">';box.appendChild(wrap);} _renderChoiceList(q,origKey,box,'ABCD'); }
+function _renderMatrix(q, origKey, box){ const rows=_safeItems(q); if(!rows.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No matrix rows defined.</p>';return;} const opts=(q.accept||'True|False').split('|').map(x=>x.trim()).filter(Boolean); let cur={};try{cur=answers[origKey]?JSON.parse(answers[origKey]):{};}catch(e){} const table=document.createElement('table');table.className='cat-table';table.innerHTML='<thead><tr><th>Statement / Row</th><th>Answer</th></tr></thead>'; rows.forEach((r,i)=>{const statement=typeof r==='string'?r:(r.statement||r.item||r.label||('Row '+(i+1)));const tr=document.createElement('tr');tr.innerHTML='<td class="cat-item">'+escapeHtmlStudent(statement)+'</td><td class="cat-cell"><select class="cat-select" id="matrix-'+origKey+'-'+i+'"><option value="">— Select —</option>'+opts.map(o=>'<option value="'+escapeHtmlStudent(o)+'" '+(cur[i]===o?'selected':'')+'>'+escapeHtmlStudent(o)+'</option>').join('')+'</select></td>';table.appendChild(tr);}); box.appendChild(table); requestAnimationFrame(()=>rows.forEach((_,i)=>{const sel=document.getElementById(`matrix-${origKey}-${i}`);if(!sel)return;sel.addEventListener('change',()=>{const ans={};rows.forEach((_,j)=>{const v=document.getElementById(`matrix-${origKey}-${j}`)?.value||'';if(v)ans[j]=v;});answers[origKey]=Object.keys(ans).length?JSON.stringify(ans):null;renderQNav();});sel.addEventListener('keydown',e=>e.stopPropagation());})); }
+function _renderHotText(q, origKey, box){ const items=_safeItems(q); const chunks=items.length?items:String(q.accept||'').split('|').filter(Boolean); if(!chunks.length){_renderShort(q,origKey,box);return;} let selected=new Set();try{selected=new Set((answers[origKey]||'').split('|').filter(Boolean));}catch(e){} const hint=document.createElement('div');hint.className='short-answer-hint';hint.innerHTML='<strong>Select all correct words/phrases.</strong>';box.appendChild(hint); const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;'; chunks.forEach((c,i)=>{const text=typeof c==='string'?c.replace(/^\*/,''):(c.text||c.item||'');const key=String(i);const b=document.createElement('button');b.type='button';b.className='btn-sm '+(selected.has(key)?'btn-primary':'btn-outline');b.style.cssText='width:auto;padding:7px 10px;font-size:12px;';b.innerText=text;b.onclick=()=>{if(selected.has(key))selected.delete(key);else selected.add(key);answers[origKey]=[...selected].sort().join('|')||null;b.className='btn-sm '+(selected.has(key)?'btn-primary':'btn-outline');renderQNav();};wrap.appendChild(b);}); box.appendChild(wrap); }
+function _renderCodeAnswer(q, origKey, box){ let rubric={};try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const val=answers[origKey]||''; const lang=rubric.language||q.unit||'text'; const wrap=document.createElement('div'); wrap.innerHTML=`<div class="short-answer-hint"><strong>Code / Algorithm Response</strong> — Language: ${escapeHtmlStudent(lang)}. No AI API is used; scoring is by teacher keywords/tests.</div><textarea class="essay-textarea" id="code-${origKey}" spellcheck="false" style="font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;min-height:190px;" placeholder="Type code, pseudocode, SQL, algorithm, or structured answer here…">${escapeHtmlStudent(val)}</textarea>`; box.appendChild(wrap); requestAnimationFrame(()=>{const ta=document.getElementById(`code-${origKey}`);if(!ta)return;ta.addEventListener('input',()=>{answers[origKey]=ta.value.trim()?ta.value:null;renderQNav();});ta.addEventListener('keydown',e=>e.stopPropagation());}); }
+
 function escapeHtmlStudent(s){
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -2032,6 +2199,7 @@ async function submitExam(){
     clearDraft();
     stopProctoring();
     stopDevToolsTrap();
+    stopAudioMonitor();
     window.onbeforeunload=null;
 
     // Remove all anti-cheat listeners
@@ -2107,6 +2275,22 @@ async function submitExam(){
             const tol=parseFloat(q.tolerance)||0;
             if(!isNaN(studentVal)&&!isNaN(correctVal)&&Math.abs(studentVal-correctVal)<=Math.abs(tol)){score++;correct++;}
             else{wrong++;}
+
+        } else if(qtype==='assertion_reason'||qtype==='case_study'||qtype==='image_mcq'){
+            if(String(sa||'').toUpperCase()===String(q.ans||'').toUpperCase()){score++;correct++;}else{wrong++;}
+
+        } else if(qtype==='matrix'){
+            const rows=_safeItems(q);let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}
+            let cc=0;rows.forEach((r,i)=>{const correctAns=String((typeof r==='object'?(r.answer||r.correct||r.category):'')||'').toLowerCase();if(correctAns && String(obj[i]||'').toLowerCase()===correctAns)cc++;});
+            const partial=rows.length?cc/rows.length:0;score+=partial;if(partial===1)correct++;else wrong++;
+
+        } else if(qtype==='hot_text'){
+            const items=_safeItems(q);let correctKeys=[];if(items.length){items.forEach((it,i)=>{if((typeof it==='object'&&(it.correct===true||it.answer===true))||String(it).startsWith('*'))correctKeys.push(String(i));});}else{correctKeys=String(q.ans||'').split('|').filter(Boolean);}
+            const st=new Set(String(sa||'').split('|').filter(Boolean));const cs=new Set(correctKeys);let pts=0;st.forEach(k=>{pts+=cs.has(k)?1:-1;});pts=Math.max(0,pts);const partial=cs.size?pts/cs.size:0;score+=Math.min(1,partial);if(partial>=1)correct++;else wrong++;
+
+        } else if(qtype==='code'){
+            let rubric={};try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){}
+            const text=String(sa||'').toLowerCase();const keywords=Array.isArray(rubric.keywords)?rubric.keywords:String(q.accept||q.ans||'').split('|').filter(Boolean);let pts=keywords.length?keywords.filter(k=>text.includes(String(k).toLowerCase())).length/keywords.length:0.5;pts=Math.max(0,Math.min(1,pts));score+=pts;if(pts>=0.8)correct++;else wrong++;
 
         } else if(qtype==='matching'){
             // q.pairs = [{left,right},...] — correct pairs
@@ -2215,6 +2399,7 @@ async function submitExam(){
     document.getElementById('exam-card').classList.add('hidden');
     document.getElementById('result-view').classList.remove('hidden');
     document.getElementById('calc-btn').classList.add('hidden');
+    document.getElementById('math-kbd-btn').classList.add('hidden');
     document.getElementById('calculator').style.display='none';
 
     // Grade ring
@@ -2316,6 +2501,15 @@ async function submitExam(){
             } else if(qtype==='numeric'){
                 const sv=parseFloat(sa), cv=parseFloat(q.ans), tol=parseFloat(q.tolerance)||0;
                 isCorrect=!isNaN(sv)&&!isNaN(cv)&&Math.abs(sv-cv)<=Math.abs(tol);
+            } else if(qtype==='assertion_reason'||qtype==='case_study'||qtype==='image_mcq'){
+                isCorrect=String(sa||'').toUpperCase()===String(q.ans||'').toUpperCase();
+            } else if(qtype==='matrix'){
+                const rows=_safeItems(q);let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}let cc=0;rows.forEach((r,mi)=>{const ca=String((typeof r==='object'?(r.answer||r.correct||r.category):'')||'').toLowerCase();if(ca&&String(obj[mi]||'').toLowerCase()===ca)cc++;});partialPts=rows.length?cc/rows.length:0;isCorrect=partialPts===1;isPartial=partialPts>0&&partialPts<1;
+            } else if(qtype==='hot_text'){
+                const items=_safeItems(q);let correctKeys=[];if(items.length){items.forEach((it,hi)=>{if((typeof it==='object'&&(it.correct===true||it.answer===true))||String(it).startsWith('*'))correctKeys.push(String(hi));});}else{correctKeys=String(q.ans||'').split('|').filter(Boolean);}const st=new Set(String(sa||'').split('|').filter(Boolean));const cs=new Set(correctKeys);let pts=0;st.forEach(k=>{pts+=cs.has(k)?1:-1;});partialPts=cs.size?Math.max(0,pts)/cs.size:0;isCorrect=partialPts>=1;isPartial=partialPts>0&&partialPts<1;
+            } else if(qtype==='code'){
+                let rubric={};try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){}const text=String(sa||'').toLowerCase();const keywords=Array.isArray(rubric.keywords)?rubric.keywords:String(q.accept||q.ans||'').split('|').filter(Boolean);partialPts=keywords.length?keywords.filter(k=>text.includes(String(k).toLowerCase())).length/keywords.length:0.5;isCorrect=partialPts>=0.8;isPartial=partialPts>0&&!isCorrect;
+
             } else if(qtype==='matching'){
                 const pairs=q.pairs||[];
                 let studentAns={};
@@ -2408,6 +2602,20 @@ async function submitExam(){
             optionsDisplay=parts.map((part,mi)=>'<div style="font-size:13px;margin-bottom:5px;">'+escapeHtmlStudent(part.label||('Part '+(mi+1)))+': Your <span style="color:var(--warning);">'+escapeHtmlStudent(arr[mi]||'—')+'</span> · Correct <span style="color:var(--primary);font-weight:700;">'+escapeHtmlStudent(part.answer)+(part.unit?' '+escapeHtmlStudent(part.unit):'')+'</span></div>').join('');
             correctDisplay=Math.round(partialPts*100)+'% of numeric parts correct';
             studentDisplay='';
+
+        } else if(qtype==='assertion_reason'||qtype==='case_study'||qtype==='image_mcq'){
+            const opts=_getOptionList(q,qtype==='assertion_reason'?'ABCDE':'ABCD');
+            const found=opts.find(o=>o.letter===String(q.ans||'').toUpperCase());
+            correctDisplay='<strong>'+escapeHtmlStudent(q.ans||'')+'</strong>'+(found?' — '+escapeHtmlStudent(found.text):'');
+            studentDisplay=isSkipped?'':'<span style="color:'+(isCorrect?'var(--primary)':'var(--danger)')+';">'+escapeHtmlStudent(sa||'')+'</span>';
+            optionsDisplay=opts.map(o=>o.letter+') '+escapeHtmlStudent(o.text)).join(' &nbsp; ');
+        } else if(qtype==='matrix'){
+            const rows=_safeItems(q);let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}optionsDisplay=rows.map((r,mi)=>{const statement=typeof r==='string'?r:(r.statement||r.item||r.label||('Row '+(mi+1)));const ca=typeof r==='object'?(r.answer||r.correct||r.category):'';return '<div style="font-size:13px;margin-bottom:5px;">'+escapeHtmlStudent(statement)+' → Your: <span style="color:var(--warning);">'+escapeHtmlStudent(obj[mi]||'—')+'</span> · Correct: <span style="color:var(--primary);font-weight:700;">'+escapeHtmlStudent(ca||'—')+'</span></div>';}).join('');correctDisplay=Math.round(partialPts*100)+'% matrix rows correct';studentDisplay='';
+        } else if(qtype==='hot_text'){
+            const items=_safeItems(q);const selected=new Set(String(sa||'').split('|').filter(Boolean));optionsDisplay=(items.length?items:[]).map((it,hi)=>{const text=typeof it==='string'?it.replace(/^\*/,''):(it.text||it.item||'');const corr=(typeof it==='object'&&(it.correct===true||it.answer===true))||String(it).startsWith('*');return '<span style="display:inline-block;margin:3px;padding:4px 8px;border-radius:8px;border:1px solid '+(corr?'rgba(16,185,129,.4)':'var(--border)')+';color:'+(selected.has(String(hi))?(corr?'var(--primary)':'var(--danger)'):'var(--text-muted)')+';">'+escapeHtmlStudent(text)+(corr?' ✓':'')+'</span>';}).join('');correctDisplay=Math.round(partialPts*100)+'% hot-text score';studentDisplay='';
+        } else if(qtype==='code'){
+            studentDisplay=isSkipped?'':'<pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;line-height:1.5;">'+escapeHtmlStudent(sa||'')+'</pre>';correctDisplay='Keyword/test score: '+Math.round(partialPts*100)+'%. Teacher review recommended for final code quality.';
+
         } else if(qtype==='matching'){
             const pairs=q.pairs||[];
             const pool=window['_matchPool_'+origKey]||[];
@@ -2529,7 +2737,7 @@ async function submitExam(){
                 is_correct:   studentOrder[pos]===correctOrder[pos]
             }));
         }
-        if(['cloze','essay','categorization','multi_numeric'].includes(qtype)){
+        if(['cloze','essay','categorization','multi_numeric','assertion_reason','case_study','image_mcq','matrix','hot_text','code'].includes(qtype)){
             entry.schema=q.items||null;
             entry.accept=q.accept||null;
         }
@@ -2549,6 +2757,11 @@ async function submitExam(){
     if(_saveIndicator) _saveIndicator.style.display='block';
 
     async function _attemptSave(body, label){
+        if(label==='rpc'){
+            await sbRpc('submit_student_result',{p_payload:body});
+            console.log('[CBT] Save attempt "rpc" succeeded.');
+            return true;
+        }
         const res = await fetch(`${SB_URL}/rest/v1/results`, {
             method: 'POST',
             headers: {
@@ -2600,7 +2813,6 @@ async function submitExam(){
 
     // Minimal body — only the columns guaranteed present from the base table
     const minimalBody = {
-        cert_code:      certCode,
         exam_id:      exam.id,
         student_name: finalStudentName,
         student_class:finalStudentClass,
@@ -2612,7 +2824,14 @@ async function submitExam(){
     let lastError = '';
 
     try{
-        await _attemptSave(fullBody, 'full');
+        await _attemptSave(fullBody, 'rpc');
+        saved = true;
+    }catch(rpcErr){
+        console.warn('[CBT] RPC save unavailable/failed; falling back to direct REST insert:', rpcErr.message);
+    }
+
+    try{
+        if(!saved){await _attemptSave(fullBody, 'full');}
         saved = true;
     }catch(e1){
         lastError = e1.message;
@@ -2751,6 +2970,39 @@ let _calcPowYPending=false;
 function toggleCalc(){
   const c=document.getElementById('calculator');
   c.style.display=c.style.display==='block'?'none':'block';
+}
+
+function toggleMathKbd(){
+    const kbd=document.getElementById('math-kbd');
+    kbd.style.display=kbd.style.display==='none'?'flex':'none';
+}
+
+function insertMathSymbol(sym){
+    if(sym==='&lt;')sym='<'; if(sym==='&gt;')sym='>';
+    // Use the last focused answer field because clicking the keyboard button moves focus.
+    let target=_lastAnswerInput;
+    const activeEl=document.activeElement;
+    if(activeEl && (activeEl.tagName==='INPUT' || activeEl.tagName==='TEXTAREA') && activeEl.type!=='radio' && activeEl.type!=='checkbox') target=activeEl;
+    if(!target || !document.body.contains(target)){
+        const q=questions[current];
+        const orig=q?._orig;
+        target = document.getElementById('short-input-'+orig) || document.getElementById('num-input-'+orig) || document.getElementById('essay-'+orig) ||
+                 document.querySelector(`[id^="cloze-${orig}-"]`) || document.querySelector(`[id^="mn-${orig}-"]`);
+    }
+    if(target){
+        target.focus();
+        const start = (target.selectionStart!=null)?target.selectionStart:target.value.length;
+        const end = (target.selectionEnd!=null)?target.selectionEnd:start;
+        const text = target.value || '';
+        target.value = text.slice(0,start) + sym + text.slice(end);
+        const pos=start+sym.length;
+        try{target.selectionStart=target.selectionEnd=pos;}catch(e){}
+        target.dispatchEvent(new Event('input',{bubbles:true}));
+        _lastAnswerInput=target;
+        renderQNav();
+    }else{
+        showToastStudent('Tap inside a typed answer box first, then choose a symbol.');
+    }
 }
 function setCalcMode(mode){
   _calcMode=mode;
@@ -3239,7 +3491,8 @@ function _buildProctoringPayload(){
         intake_photos:_capturedPhotos.map((img,i)=>({i,img})),
         exam_snaps:_proctorSnapshots,
         face_api:_faceApiLoaded,
-        audio_monitored:!!_audioStream
+        audio_monitored:!!_audioStream,
+        config: antiCheatConfig
     };
 }
 

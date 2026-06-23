@@ -263,3 +263,39 @@ Brand details:
 - Phone: +234 907 790 7677
 - Email: hismarvellousgrace@gmail.com
 - Tech/partnerships: buildingmyictcareer@gmail.com
+
+## Enterprise features added/confirmed
+
+### Granular anti-cheat controls
+Teachers can choose only the controls needed per exam: tab/app switch detection, window blur detection, copy/cut/paste/select-all blocking, right-click blocking, fullscreen enforcement, devtools/print/source shortcut detection, camera photo gate with periodic snapshots, audio spike monitoring, and the number of violations before auto-submit.
+
+### Result operations
+Teachers can export CSV, export item analysis, view detailed answer/proctor evidence, delete individual results, bulk-select results, and delete all currently filtered/listed results. Admin can view/export/delete platform-wide result records.
+
+### Verifiable certificates
+Students receive a certificate/submission code after submission. `certificate.html` verifies the code against Supabase through `verify_certificate()` and displays the authentic score, subject, date, issuer, and validity status.
+
+### Math/Science on-screen keyboard
+The student portal includes an on-screen keyboard for symbols not available on normal keyboards, including Greek letters, inequalities, roots, calculus signs, set/logic signs, superscripts/subscripts, chemistry formula fragments, and science units.
+
+### Question types
+The system supports MCQ, MRQ, True/False, Short Answer, Numeric, Matching, Ordering, Cloze/Multi-blank, Essay/Keyword, Categorization, and Multi-part Numeric. Assertion-reason, case-study, image-based, and practical/science questions can be implemented using these supported types without paid APIs.
+## CBT v2 additions
+
+- Additional question types: Assertion–Reason, Case Study, Image MCQ, Matrix/Grid, Hot Text, and Code/Algorithm responses.
+- Math/Science keyboard is now always available during exams so legacy exams also support symbol input.
+- Admin can open a teacher dashboard in admin-supervised control mode, without knowing or exposing teacher passwords.
+- Admin can open/lock exams and clear an exam’s result records from the platform-wide exam page.
+## CBT v3 documentation and authoring upgrades
+
+- Teacher Dashboard now documents all 17 question types directly in the Question Bank section.
+- Downloadable CSV question template includes example rows for all 17 question types.
+- `PROMPT_TEMPLATE.md` now contains ready-to-copy prompts that teachers can give to an AI assistant to generate HMG CBT-compatible CSV question banks manually.
+- The prompt template includes strict CSV header, CSV escaping rules, distribution guidance, type-specific column rules, quality rules, and no-paid-API reminders.
+## SEO/PWA/Lead generation
+
+- Search-engine friendly landing page with canonical URL, meta description, Open Graph/Twitter cards and JSON-LD structured data.
+- `robots.txt` and `sitemap.xml` included for Google, Bing and other search engines.
+- Installable PWA for Android, iPhone/iPad, Windows, macOS and Chromebook.
+- HMG ecosystem lead links point customers to HMG Academy, HMG Concepts, HMG Technologies/project enquiry and WhatsApp.
+

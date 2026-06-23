@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Admin panel for HMG Academy CBT Pro. Manage teachers, platform exams, reports, deployment checks and school assessment workflows.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#10b981">
 <title>HMG Academy CBT | Enterprise Admin Panel</title>
 <link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="assets/hmg-academy-logo.png">
 <link rel="apple-touch-icon" href="assets/hmg-academy-logo.png">
 <meta name="theme-color" content="#10b981">
@@ -440,7 +445,7 @@ tbody tr:hover td{background:var(--surface-hover);}
             <thead>
               <tr>
                 <th>Student</th><th>Class</th><th>Subject</th><th>Teacher</th>
-                <th>Score</th><th>%</th><th>Mode</th><th>Integrity</th><th>Time</th><th>Date</th>
+                <th>Score</th><th>%</th><th>Mode</th><th>Integrity</th><th>Time</th><th>Date</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="all-results-body"></tbody>
@@ -1898,6 +1903,12 @@ function viewTeacherDashboard(teacherId){
   const flags=results.filter(r=>r.violations&&Number(r.violations)>0).length;
 
   let html=`
+
+    <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+      <div style="font-size:12px;color:var(--text-muted);line-height:1.6;"><strong style="color:var(--info);">Admin Teacher Control:</strong> open the teacher dashboard as this teacher using your admin token. Actions are recorded as admin-supervised operations.</div>
+      <button class="btn-sm btn-info" onclick="startTeacherImpersonation('${teacherId}')" style="padding:8px 13px;font-size:12px;">👤 Impersonate / Control Teacher</button>
+    </div>
+
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
       <div style="background:var(--bg);border:1px solid var(--border);padding:14px;border-radius:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--primary);">${exams.length}</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Exams</div></div>
       <div style="background:var(--bg);border:1px solid var(--border);padding:14px;border-radius:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--primary);">${results.length}</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Submissions</div></div>
@@ -1943,6 +1954,25 @@ function viewTeacherDashboard(teacherId){
   document.getElementById('teacher-dash-modal').classList.remove('hidden');
 }
 
+
+function startTeacherImpersonation(teacherId){
+  const prof=allProfiles.find(p=>p.id===teacherId);
+  if(!prof||!adminSession?.access_token)return showToast('Admin session or teacher profile not found.');
+  if(!confirm(`Open Teacher Dashboard as ${prof.email}?
+
+You will use your admin privileges to manage this teacher's exams, students, and results. This is not a password login as the teacher; it is an admin-supervised control mode.`))return;
+  const payload={
+    access_token:adminSession.access_token,
+    refresh_token:adminSession.refresh_token,
+    admin_email:adminSession.user?.email||ADMIN_EMAIL,
+    target_user:{id:prof.id,email:prof.email,user_metadata:{display_name:prof.full_name||prof.email?.split('@')[0]||'Teacher'}},
+    saved_at:Date.now()
+  };
+  localStorage.setItem('cbt_admin_impersonate_teacher',JSON.stringify(payload));
+  logActivity(`Started teacher impersonation/control view: ${prof.email}`,'warning');
+  window.open('teacher.html?admin_impersonate=1','_blank');
+}
+
 // ══════════════════════════════════════════════
 // ALL EXAMS
 // ══════════════════════════════════════════════
@@ -1972,10 +2002,40 @@ function renderAllExams(){
       <td>${qLen}</td>
       <td style="font-size:12px;color:var(--text-muted);">${new Date(e.created_at).toLocaleDateString('en-GB')}</td>
       <td class="no-print" style="white-space:nowrap;">
+        <button class="btn-sm btn-outline" onclick="adminToggleExam('${e.id}',${!e.is_open})" style="padding:5px 10px;font-size:11px;">${e.is_open?'Lock':'Open'}</button>
+        <button class="btn-sm btn-warning" onclick="adminClearExamResults('${e.id}')" style="padding:5px 10px;font-size:11px;">Clear Results</button>
         <button class="btn-sm btn-danger" onclick="adminDeleteExam('${e.id}')" style="padding:5px 10px;font-size:11px;">Delete</button>
       </td>
     </tr>`;
   }).join('');
+}
+
+
+async function adminToggleExam(id, open){
+  const exam=allExams.find(e=>e.id===id);if(!exam)return;
+  const m=decodeMeta(exam.subject);
+  if(!confirm(`${open?'Open':'Lock'} exam "${m.subject}"?`))return;
+  try{
+    await sbFetch(`/rest/v1/exams?id=eq.${id}`,'PATCH',{is_open:!!open,updated_at:new Date().toISOString()});
+    logActivity(`Admin ${open?'opened':'locked'} exam: ${m.subject}`,'warning');
+    showToast(open?'Exam opened.':'Exam locked.');
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+async function adminClearExamResults(id){
+  const exam=allExams.find(e=>e.id===id);if(!exam)return;
+  const count=allResults.filter(r=>r.exam_id===id).length;
+  const m=decodeMeta(exam.subject);
+  if(!count)return showToast('No results to clear for this exam.');
+  if(!confirm(`Delete all ${count} result(s) for "${m.subject}"?
+
+This resets attempts for affected students and cannot be undone.`))return;
+  try{
+    await sbFetch(`/rest/v1/results?exam_id=eq.${id}`,'DELETE');
+    logActivity(`Admin cleared ${count} result(s) for exam: ${m.subject}`,'danger');
+    showToast('Exam results cleared.');
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
 }
 
 async function adminDeleteExam(id){
@@ -2036,8 +2096,21 @@ function renderAllResults(){
       <td>${iCell}</td>
       <td style="color:var(--text-muted);font-size:12px;">${formatTime(r.time_taken)}</td>
       <td style="color:var(--text-muted);font-size:12px;">${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
+      <td>
+        <button class="btn-sm btn-danger" onclick="adminDeleteResult('${r.id}')" style="padding:5px 10px;font-size:11px;">Delete</button>
+      </td>
     </tr>`;
   }).join('');
+}
+
+async function adminDeleteResult(id){
+  if(!confirm(`⚠️ Delete this result permanently?`)) return;
+  try{
+    await sbFetch(`/rest/v1/results?id=eq.${id}`,'DELETE');
+    logActivity(`Admin deleted a student result`,'warning');
+    showToast('Result deleted.');
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
 }
 
 function exportAllResults(){

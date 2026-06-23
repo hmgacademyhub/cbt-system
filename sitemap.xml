@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://hmgacademyhub.github.io/cbtplatform/</loc>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.00</priority>
+    <image:image><image:loc>https://hmgacademyhub.github.io/cbtplatform/assets/hmg-academy-logo.png</image:loc><image:title>HMG Academy CBT Pro</image:title></image:image>
+  </url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/index.html</loc><lastmod>2026-06-23</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/student.html</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/teacher.html</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/admin.html</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.55</priority></url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/certificate.html</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/feature_guide.html</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/link_checker.html</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://hmgacademyhub.github.io/cbtplatform/deployment_validator.html</loc><lastmod>2026-06-23</lastmod><changefreq>monthly</changefreq><priority>0.50</priority></url>
+</urlset>

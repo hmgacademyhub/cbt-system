@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v7';
+const CACHE_NAME = 'hmg-cbt-shell-v8-seo-pwa';
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
@@ -21,7 +21,12 @@ const SHELL_ASSETS = [
   './assets/hmg-academy-logo.png',
   './deployment_validator.html',
   './feature_guide.html',
-  './link_checker.html'
+  './link_checker.html',
+  './certificate.html',
+  './robots.txt',
+  './sitemap.xml',
+  './browserconfig.xml',
+  './llms.txt'
 ];
 
 // Install event: cache the app shell

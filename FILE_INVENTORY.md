@@ -38,3 +38,12 @@ This inventory lists all project files prepared for upload.
 ## Excluded from upload package
 
 The `.git` directory and local system/cache files are excluded from the upload package and zip.
+
+- `ADVANCED_QUESTION_TYPES_GUIDE.md` — explains all 17 supported question types and CSV JSON schemas.
+- `CBT_V3_AUDIT_AND_DEPLOYMENT_STEPS.md` — v3 audit, documentation alignment, prompt-template purpose, and deployment steps.
+- `robots.txt` — search engine crawl instructions and sitemap pointer.
+- `sitemap.xml` — public page list for Google, Bing and other search engines.
+- `llms.txt` — AI/search assistant summary of HMG Academy CBT Pro and HMG Concepts ecosystem.
+- `browserconfig.xml` — Windows/PWA tile metadata.
+- `SEO_PWA_LEAD_GENERATION.md` — SEO, installability and lead-generation guide.
+

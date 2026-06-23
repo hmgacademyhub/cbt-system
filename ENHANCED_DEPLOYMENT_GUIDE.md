@@ -26,3 +26,8 @@
 2. Student takes exam → Submit → Result saves
 3. Teacher views result → Export/Delete as needed
 4. Issue certificate → Student verifies at certificate.html
+
+
+## CBT v3 note
+
+Before deployment, run `COMPLETE_SQL_SETUP.sql`, then upload all static files. CBT v3 includes a rewritten `PROMPT_TEMPLATE.md` for manual AI-assisted CSV question generation, a Teacher Dashboard reference for all 17 question types, and a downloadable CSV template with all 17 type examples. No runtime AI API is used.

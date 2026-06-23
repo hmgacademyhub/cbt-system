@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Teacher dashboard for HMG Academy CBT Pro. Create online exams, upload CSV question banks, manage 17 question types, view analytics and export results.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#10b981">
 <title>HMG Academy CBT | Teacher Dashboard</title>
 <link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" href="assets/hmg-academy-logo.png">
 <link rel="apple-touch-icon" href="assets/hmg-academy-logo.png">
 <meta name="theme-color" content="#10b981">
@@ -635,6 +640,7 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
     <div id="topbar">
       <button id="hamburger" onclick="toggleSidebar()">☰</button>
       <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div id="impersonation-banner" class="hidden" style="font-size:11px;font-weight:800;color:#f59e0b;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:999px;padding:6px 10px;">ADMIN CONTROL MODE</div>
       <div class="topbar-actions no-print" style="position:relative;">
         <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
         <button class="notif-btn" onclick="toggleNotifPanel()" id="notif-btn" title="Notifications">
@@ -816,6 +822,27 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           </select>
         </div>
 
+
+
+        <hr class="divider">
+        <div class="form-section-title">Anti-Cheat Controls (choose only what you need)</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+          <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:12px;">Select exactly which integrity tools should run for this exam. Turn off <strong>camera/proctoring</strong> for low-stakes tests or where students do not have webcams; keep tab-switch logging and randomisation for normal classroom security.</p>
+          <div class="grid-2" style="margin-bottom:0;">
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-tab" checked style="width:auto;margin-top:2px;"> Detect tab/app switching</label>
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-window" checked style="width:auto;margin-top:2px;"> Detect window blur/focus loss</label>
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-copy" checked style="width:auto;margin-top:2px;"> Block copy/cut/paste/select-all</label>
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-rightclick" checked style="width:auto;margin-top:2px;"> Block right-click/context menu</label>
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-fullscreen" checked style="width:auto;margin-top:2px;"> Require fullscreen mode</label>
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-devtools" checked style="width:auto;margin-top:2px;"> Detect developer tools / print / source shortcuts</label>
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-proctor" style="width:auto;margin-top:2px;"> Camera photo gate + periodic snapshots</label>
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ac-audio" style="width:auto;margin-top:2px;"> Browser audio spike monitoring</label>
+          </div>
+          <div class="grid-2" style="margin-top:12px;margin-bottom:0;">
+            <div><label>Violation Limit Before Auto-Submit</label><input type="number" id="ac-max" min="1" max="20" value="5" style="margin-bottom:0;"></div>
+            <div><label>On-screen Math/Science Keyboard</label><select id="ex-math-keyboard" style="margin-bottom:0;"><option value="true">Enable for typed answers</option><option value="false">Disable</option></select></div>
+          </div>
+        </div>
         <hr class="divider">
         <div class="form-section-title">Student Access</div>
         <p style="font-size:13px;margin-bottom:12px;">Choose who can sit this exam. Registered mode requires students to be in your class roster.</p>
@@ -991,12 +1018,32 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           </div>
 
           <div style="border:1px solid rgba(236,72,153,0.25);border-radius:12px;overflow:hidden;margin-bottom:14px;background:rgba(236,72,153,0.03);">
-            <div style="padding:10px 14px;background:rgba(236,72,153,0.08);border-bottom:1px solid rgba(236,72,153,0.2);font-size:12px;font-weight:800;color:#ec4899;text-transform:uppercase;letter-spacing:0.4px;">Advanced Question Types — Free, Rule-Based, No AI API</div>
-            <div style="padding:12px 16px;font-size:12px;color:var(--text-muted);line-height:1.8;">
-              <span style="font-weight:800;color:#ec4899;">cloze</span> — multi-blank fill-in-the-gap. Col14 = JSON array of accepted answers per blank, e.g. <code>["mass|m","acceleration|a"]</code>.<br>
-              <span style="font-weight:800;color:#fb923c;">essay</span> — long response scored by keywords/minimum word count. Col11 = keyword list; Col14 = JSON rubric. Teacher review is recommended because no AI API is used.<br>
-              <span style="font-weight:800;color:#22c55e;">categorization</span> — student assigns each item to a category. Col14 = JSON array of <code>{"item":"...","category":"..."}</code>.<br>
-              <span style="font-weight:800;color:#0ea5e9;">multi_numeric</span> — several numeric answers in one question. Col14 = JSON array of <code>{"label":"x","answer":3,"tolerance":0}</code>.
+            <div style="padding:10px 14px;background:rgba(236,72,153,0.08);border-bottom:1px solid rgba(236,72,153,0.2);font-size:12px;font-weight:800;color:#ec4899;text-transform:uppercase;letter-spacing:0.4px;">Complete Question Type Reference — 17 Types, Free Rule-Based Scoring, No AI API</div>
+            <div style="padding:12px 16px;font-size:12px;color:var(--text-muted);line-height:1.85;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:10px;">
+                <div><span style="font-weight:800;color:#3b82f6;">mcq</span> — Multiple choice. Col2–5 = options, Col6 = A/B/C/D.</div>
+                <div><span style="font-weight:800;color:#f59e0b;">tf</span> — True/False. Col2=True, Col3=False, Col6=A or B.</div>
+                <div><span style="font-weight:800;color:#a78bfa;">mrq</span> — Multiple response. Col6 = sorted letters, e.g. <code>A,C</code>; Col12 controls partial/all-or-nothing.</div>
+                <div><span style="font-weight:800;color:#10b981;">short</span> — Typed answer. Col6 = primary answer; Col11 = accepted alternatives with <code>|</code>.</div>
+                <div><span style="font-weight:800;color:#ef4444;">numeric</span> — Number input. Col6 = answer, Col9 = tolerance, Col10 = unit.</div>
+                <div><span style="font-weight:800;color:#14b8a6;">matching</span> — Left/right pairs. Col13 = JSON pair array plus optional <code>DISTRACTOR</code> rows.</div>
+                <div><span style="font-weight:800;color:#a855f7;">ordering</span> — Sequencing. Col14 = JSON array in correct order.</div>
+                <div><span style="font-weight:800;color:#ec4899;">cloze</span> — Multi-blank. Question uses <code>___</code>; Col14 = JSON answer list.</div>
+                <div><span style="font-weight:800;color:#fb923c;">essay</span> — Long response. Col11/Col14 = keywords/min words; teacher review recommended.</div>
+                <div><span style="font-weight:800;color:#22c55e;">categorization</span> — Assign item to category. Col14 = <code>{"item":"...","category":"..."}</code> array.</div>
+                <div><span style="font-weight:800;color:#0ea5e9;">multi_numeric</span> — Several numeric parts. Col14 = <code>{"label":"x","answer":3,"tolerance":0}</code> array.</div>
+                <div><span style="font-weight:800;color:#f97316;">assertion_reason</span> — Assertion–Reason logic. Col6 = A/B/C/D/E; Col14 may contain assertion/reason JSON.</div>
+                <div><span style="font-weight:800;color:#84cc16;">case_study</span> — Passage/scenario MCQ. Col14 = <code>{"passage":"..."}</code>.</div>
+                <div><span style="font-weight:800;color:#06b6d4;">image_mcq</span> — Diagram/image MCQ. Col11 or Col14 may contain image path/data URI.</div>
+                <div><span style="font-weight:800;color:#eab308;">matrix</span> — Grid rows with shared choices. Col11 = choices like <code>True|False</code>; Col14 = row JSON.</div>
+                <div><span style="font-weight:800;color:#f43f5e;">hot_text</span> — Select correct words/phrases. Col14 = text chunks with <code>correct:true</code>.</div>
+                <div><span style="font-weight:800;color:#8b5cf6;">code</span> — Code/SQL/algorithm response. Col10 = language; Col11/Col14 = keywords/tests; teacher review recommended.</div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;line-height:1.8;">
+                <strong style="color:var(--text);">JSON escaping rule:</strong> Whenever Col13 or Col14 contains JSON, wrap the whole CSV cell in double-quotes and write every inner double-quote as two double-quotes. Example: <code>"[{""item"":""Sodium"",""category"":""Metal""}]"</code>.<br>
+                <strong style="color:var(--text);">No AI API:</strong> Essay and code answers use transparent keyword/minimum-word/test rules and should be reviewed by the teacher for high-stakes grading.<br>
+                <strong style="color:var(--text);">Prompt help:</strong> Use <code>PROMPT_TEMPLATE.md</code> to ask an AI assistant to generate a ready-to-upload CSV question bank manually.
+              </div>
             </div>
           </div>
 
@@ -1033,17 +1080,25 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;">
             <div style="padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:12px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:0.4px;">How to fill each column per question type</div>
 
-            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);line-height:1.8;">
-              <span style="font-weight:800;color:var(--info);">mcq (or blank)</span> — Fill A–G normally. Column F = A, B, C, or D. Leave H–N empty.<br>
-              <span style="font-weight:800;color:#a78bfa;">mrq</span> — Fill A–G. Column F = comma list of correct letters e.g. <code>A,C</code>. Column H = <code>mrq</code>. Column L = <code>true</code> or <code>false</code> for all-or-nothing. Leave I,J,K,M,N empty.<br>
-              <span style="font-weight:800;color:var(--warning);">tf</span> — Column B = <code>True</code>, Column C = <code>False</code>, leave D and E empty. Column F = <code>A</code> (if true) or <code>B</code> (if false). Column H = <code>tf</code>. Leave I–N empty.<br>
-              <span style="font-weight:800;color:var(--primary);">short</span> — Leave B,C,D,E empty. Column F = the correct answer text. Column H = <code>short</code>. Column K = pipe-separated alternates e.g. <code>H₂O|water</code>. Leave I,J,L,M,N empty.<br>
-              <span style="font-weight:800;color:var(--danger);">numeric</span> — Leave B,C,D,E empty. Column F = the correct number. Column H = <code>numeric</code>. Column I = tolerance (e.g. <code>0.5</code>). Column J = unit (e.g. <code>m/s²</code>). Leave K,L,M,N empty.<br>
-              <span style="font-weight:800;color:#14b8a6;">matching</span> — Leave B–F empty. Column H = <code>matching</code>. Column M = pairs as JSON array: <code>[{"left":"Sodium","right":"Na"},{"left":"DISTRACTOR","right":"Au"}]</code>. Leave I,J,K,L,N empty.<br>
-              <span style="font-weight:800;color:#a855f7;">ordering</span> — Leave B–F empty. Column H = <code>ordering</code>. Column N = items as JSON array in CORRECT order: <code>["Prophase","Metaphase","Anaphase","Telophase"]</code>. Leave I,J,K,L,M empty.
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);line-height:1.85;">
+              <span style="font-weight:800;color:var(--info);">mcq (or blank)</span> — Fill A–G normally. F = A/B/C/D. H may be blank or <code>mcq</code>.<br>
+              <span style="font-weight:800;color:#a78bfa;">mrq</span> — F = comma list like <code>A,C</code>. H = <code>mrq</code>. L = <code>true</code> or <code>false</code>.<br>
+              <span style="font-weight:800;color:var(--warning);">tf</span> — B=True, C=False, D/E blank. F = A or B. H = <code>tf</code>.<br>
+              <span style="font-weight:800;color:var(--primary);">short</span> — F = primary answer. K = alternates like <code>H₂O|water</code>. H = <code>short</code>.<br>
+              <span style="font-weight:800;color:var(--danger);">numeric</span> — F = number, I = tolerance, J = unit. H = <code>numeric</code>.<br>
+              <span style="font-weight:800;color:#14b8a6;">matching</span> — M = JSON pair array. Use <code>{"left":"DISTRACTOR","right":"..."}</code> for decoys. H = <code>matching</code>.<br>
+              <span style="font-weight:800;color:#a855f7;">ordering</span> — N = JSON array in correct order. H = <code>ordering</code>.<br>
+              <span style="font-weight:800;color:#ec4899;">cloze</span> — Question uses <code>___</code>; N = JSON answer list. H = <code>cloze</code>.<br>
+              <span style="font-weight:800;color:#fb923c;">essay</span> — K = keywords; N = JSON rubric with <code>min_words</code> and <code>keywords</code>. H = <code>essay</code>.<br>
+              <span style="font-weight:800;color:#22c55e;">categorization</span> — N = JSON item/category rows. H = <code>categorization</code>.<br>
+              <span style="font-weight:800;color:#0ea5e9;">multi_numeric</span> — N = JSON numeric parts. H = <code>multi_numeric</code>.<br>
+              <span style="font-weight:800;color:#f97316;">assertion_reason</span> — F = A/B/C/D/E. N may contain assertion/reason JSON. H = <code>assertion_reason</code>.<br>
+              <span style="font-weight:800;color:#84cc16;">case_study</span> — B–E = options, F = A/B/C/D, N = <code>{"passage":"..."}</code>. H = <code>case_study</code>.<br>
+              <span style="font-weight:800;color:#06b6d4;">image_mcq</span> — B–E = options, F = answer, K or N = image path/data URI. H = <code>image_mcq</code>.<br>
+              <span style="font-weight:800;color:#eab308;">matrix</span> — K = shared choices like <code>True|False</code>, N = row JSON. H = <code>matrix</code>.<br>
+              <span style="font-weight:800;color:#f43f5e;">hot_text</span> — N = chunks JSON with <code>correct:true</code>. H = <code>hot_text</code>.<br>
+              <span style="font-weight:800;color:#8b5cf6;">code</span> — J = language, K/N = keywords/tests. H = <code>code</code>; teacher review recommended.
             </div>
-          </div>
-
           <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--text-muted);">
             <strong style="color:var(--warning);">⚠️ Excel Tips:</strong> For Matching and Ordering, type the JSON directly into the cell — do NOT wrap it in quotes in Excel (Excel handles the cell boundary automatically). Use regular double-quotes inside the JSON. Save as .xlsx, not .xls where possible.
           </div>
@@ -1057,7 +1112,7 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;">
             <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;">📄 PDF Question Format Guide</div>
             <div style="font-size:12px;color:var(--text-muted);line-height:1.7;">
-              The PDF parser reads text extracted from your PDF and recognises questions by their structure. Each question type has a specific format the parser looks for. Use a text-based PDF (not a scanned image). If your PDF was exported from Word or Google Docs, it will work perfectly.
+              The PDF parser reads text extracted from your PDF and recognises the most common structured types by their tags. For all 17 enterprise types, CSV/XLSX/manual entry is recommended because JSON schemas are more reliable there. Use a text-based PDF (not a scanned image). If your PDF was exported from Word or Google Docs, it will work perfectly.
             </div>
           </div>
 
@@ -1267,6 +1322,7 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
             <p style="font-size:13px;">Filter by any dimension then Generate Insights.</p>
           </div>
           <div class="flex-gap no-print">
+            <button class="btn-sm btn-danger" onclick="clearAllFilteredResults()" style="font-size:12px;">🗑 Delete All Listed</button>
             <button class="btn-sm btn-outline" onclick="exportResults()">⬇ Export CSV</button>
             <button class="btn-sm btn-outline" onclick="exportItemAnalysisCSV()">🧩 Item Analysis CSV</button>
             <button class="btn-sm btn-outline" onclick="loadResults().then(()=>showToast('✅ Results refreshed.'))" title="Reload latest results from database" style="font-size:12px;">🔄 Refresh</button>
@@ -2182,6 +2238,26 @@ SELECT 'Run COMPLETE_SQL_SETUP.sql for the canonical HMG Academy CBT v3.1 databa
         </div>
       </div>
 
+
+
+      <hr class="divider">
+      <div class="form-section-title">Anti-Cheat Controls</div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+        <div class="grid-2" style="margin-bottom:0;">
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-tab" style="width:auto;margin-top:2px;"> Detect tab/app switching</label>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-window" style="width:auto;margin-top:2px;"> Detect window blur/focus loss</label>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-copy" style="width:auto;margin-top:2px;"> Block copy/cut/paste/select-all</label>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-rightclick" style="width:auto;margin-top:2px;"> Block right-click/context menu</label>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-fullscreen" style="width:auto;margin-top:2px;"> Require fullscreen mode</label>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-devtools" style="width:auto;margin-top:2px;"> Detect developer tools / print / source shortcuts</label>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-proctor" style="width:auto;margin-top:2px;"> Camera proctoring</label>
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ac-audio" style="width:auto;margin-top:2px;"> Audio spike monitoring</label>
+        </div>
+        <div class="grid-2" style="margin-top:12px;margin-bottom:0;">
+          <div><label>Violation Limit Before Auto-Submit</label><input type="number" id="edit-ac-max" min="1" max="20" value="5" style="margin-bottom:0;"></div>
+          <div><label>On-screen Math/Science Keyboard</label><select id="edit-ex-math-keyboard" style="margin-bottom:0;"><option value="true">Enable</option><option value="false">Disable</option></select></div>
+        </div>
+      </div>
       <hr class="divider">
       <div class="form-section-title">Add Questions to This Exam</div>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
@@ -2229,7 +2305,54 @@ let lastResultCount=0;
 let inactivityTimer=null;
 const INACTIVITY_LIMIT=8*60*60*1000;
 const SESSION_KEY='cbt_pro_session';
+const IMPERSONATION_KEY='cbt_admin_impersonate_teacher';
+let adminImpersonation=null;
 let manualQCount=0; // counter for manual question entries
+
+
+
+async function saveExamPayloadWithFallback(payload, method='POST', examId=''){
+  const url=method==='PATCH'?`/rest/v1/exams?id=eq.${examId}`:'/rest/v1/exams';
+  try{return await sbFetch(url,method,payload);}catch(e){
+    const msg=String(e.message||'');
+    if(/anti_cheat_config|math_keyboard|proctoring|certificate_enabled|certificate_valid_days|column/i.test(msg)){
+      const lean={...payload};
+      delete lean.anti_cheat_config; delete lean.proctoring; delete lean.math_keyboard; delete lean.certificate_enabled; delete lean.certificate_valid_days;
+      const res=await sbFetch(url,method,lean);
+      showToast('⚠️ Saved without newest enterprise columns. Run COMPLETE_SQL_SETUP.sql to enable anti-cheat/certificate settings.');
+      return res;
+    }
+    throw e;
+  }
+}
+
+function getAntiCheatConfig(prefix='ac'){
+  const val=(id,def=false)=>{const el=document.getElementById((prefix==='ac'?'':'edit-')+id);return el?!!el.checked:def;};
+  const maxEl=document.getElementById(prefix==='ac'?'ac-max':'edit-ac-max');
+  return {
+    tab_switch: val('ac-tab',true), window_blur: val('ac-window',true), copy_paste: val('ac-copy',true),
+    right_click: val('ac-rightclick',true), fullscreen: val('ac-fullscreen',true), devtools: val('ac-devtools',true),
+    proctoring: val('ac-proctor',false), audio: val('ac-audio',false),
+    max_violations: Math.max(1, Math.min(20, Number(maxEl?.value||5)))
+  };
+}
+function normalizeAntiCheatConfig(exam){
+  let cfg=exam?.anti_cheat_config||null;
+  if(typeof cfg==='string'){try{cfg=JSON.parse(cfg);}catch(e){cfg=null;}}
+  cfg=cfg||{};
+  return {
+    tab_switch: cfg.tab_switch!==false, window_blur: cfg.window_blur!==false, copy_paste: cfg.copy_paste!==false,
+    right_click: cfg.right_click!==false, fullscreen: cfg.fullscreen!==false, devtools: cfg.devtools!==false,
+    proctoring: cfg.proctoring===true || exam?.proctoring===true,
+    audio: cfg.audio===true,
+    max_violations: Math.max(1, Math.min(20, Number(cfg.max_violations||5)))
+  };
+}
+function setAntiCheatForm(prefix, cfg){
+  const ids={tab_switch:'ac-tab',window_blur:'ac-window',copy_paste:'ac-copy',right_click:'ac-rightclick',fullscreen:'ac-fullscreen',devtools:'ac-devtools',proctoring:'ac-proctor',audio:'ac-audio'};
+  Object.entries(ids).forEach(([k,id])=>{const el=document.getElementById((prefix==='edit'?'edit-':'')+id);if(el)el.checked=!!cfg[k];});
+  const max=document.getElementById(prefix==='edit'?'edit-ac-max':'ac-max'); if(max)max.value=cfg.max_violations||5;
+}
 
 // ════════════════════════════════════════════
 // NAVIGATION — merged, handles all pages
@@ -2861,6 +2984,11 @@ function initDashboard(email){
   document.getElementById('sidebar-name').innerText=name;
   document.getElementById('sidebar-avatar').innerText=name[0].toUpperCase();
   document.getElementById('settings-email').innerText=email;
+  const impBanner=document.getElementById('impersonation-banner');
+  if(impBanner&&adminImpersonation){
+    impBanner.classList.remove('hidden');
+    impBanner.innerHTML='👤 ADMIN CONTROL: '+(adminImpersonation.target_user?.email||email)+' <button onclick="exitAdminImpersonation()" style="margin-left:8px;background:transparent;border:1px solid rgba(245,158,11,.45);color:#f59e0b;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">Exit Control</button>';
+  }
 
   // Show last login time
   const now=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -2937,11 +3065,21 @@ async function tryRestoreSession(){
   }
 }
 
+
+function exitAdminImpersonation(){
+  localStorage.removeItem(IMPERSONATION_KEY);
+  adminImpersonation=null;
+  alert('Admin control mode ended. Return to the Admin Panel tab if needed.');
+  location.href='admin.html';
+}
+
 function logout(silent=false){
   if(!silent&&!confirm('Log out of HMG Academy CBT?'))return;
   clearTimeout(inactivityTimer);
   if(autoCloseInterval){clearInterval(autoCloseInterval);autoCloseInterval=null;}
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(IMPERSONATION_KEY);
+  adminImpersonation=null;
   session=null;allResults=[];allExams=[];
   document.getElementById('app').classList.add('hidden');
   // Hide all status screens
@@ -2985,13 +3123,13 @@ function cleanAns(s,type){
   type=(type||'mcq').toLowerCase();
   if(type==='mrq'){
     // Comma-separated list of A/B/C/D
-    return (s||'').split(',').map(v=>v.trim().toUpperCase()).filter(v=>['A','B','C','D'].includes(v)).sort().join(',');
+    return (s||'').split(',').map(v=>v.trim().toUpperCase()).filter(v=>['A','B','C','D','E'].includes(v)).sort().join(',');
   }
   if(type==='short'||type==='numeric')return cleanField(s); // free text
   // Default: MCQ / TF
   if(s===undefined||s===null)return '';
-  s=cleanField(s).toUpperCase().replace(/[^A-D]/g,'');
-  return ['A','B','C','D'].includes(s)?s:'';
+  s=cleanField(s).toUpperCase().replace(/[^A-E]/g,'');
+  return ['A','B','C','D','E'].includes(s)?s:'';
 }
 
 // Split a single CSV line respecting quoted fields
@@ -3070,6 +3208,20 @@ function parseQuestionsCSV(text){
       results.push(applyQuestionMetadata(q,p));return;
     }
 
+
+
+    if(['assertion_reason','case_study','image_mcq','matrix','hot_text','code'].includes(type)){
+      const itemsRaw=cleanField(p[13]||'');
+      let items=[];
+      if(itemsRaw){try{items=JSON.parse(itemsRaw);}catch(e){console.warn(type+' parse error:',e);}}
+      const q={q:qText,type,a:cleanField(p[1]),b:cleanField(p[2]),c:cleanField(p[3]),d:cleanField(p[4]),ans:cleanAns(p[5],type),exp:cleanField(p[6])};
+      if(itemsRaw)q.items=items;
+      const accept=cleanField(p[10]); if(accept)q.accept=accept;
+      if(p[9]!==undefined){const u=cleanField(p[9]);if(u)q.unit=u;}
+      if(q.ans||type==='code'||type==='matrix'||type==='hot_text')results.push(applyQuestionMetadata(q,p));
+      return;
+    }
+
     // All other types (mcq, mrq, tf, short, numeric)
     const q={
       q:   qText,
@@ -3140,6 +3292,12 @@ function addManualQuestion(){
           <option value="numeric">&#35; Numeric Input</option>
           <option value="matching">⇌ Matching</option>
           <option value="ordering">⇅ Ordering / Sequencing</option>
+          <option value="assertion_reason">🧩 Assertion–Reason</option>
+          <option value="case_study">📚 Case Study / Passage</option>
+          <option value="image_mcq">🖼 Image-based MCQ</option>
+          <option value="matrix">▦ Matrix / Grid</option>
+          <option value="hot_text">🔎 Hot Text Selection</option>
+          <option value="code">💻 Code / Algorithm</option>
         </select>
       </div>
       <div id="mq-extra-${id}"></div>
@@ -3308,6 +3466,30 @@ function onManualTypeChange(id){
     extraArea.innerHTML='';
     // Seed two items
     addOrderItem(id);addOrderItem(id);
+
+
+  } else if(['assertion_reason','case_study','image_mcq','matrix','hot_text','code'].includes(type)){
+    optArea.innerHTML=`
+      <div style="font-size:12px;color:var(--info);margin-bottom:10px;padding:9px 13px;background:rgba(59,130,246,0.07);border-radius:8px;border:1px solid rgba(59,130,246,0.2);line-height:1.7;">
+        <strong>Advanced type:</strong> Use JSON schema for items. Examples: matrix rows <code>[{"statement":"...","answer":"True"}]</code>; hot text <code>[{"text":"...","correct":true}]</code>; case study <code>{"passage":"..."}</code>; code <code>{"language":"Python","keywords":["for","return"]}</code>.
+      </div>
+      <div class="grid-2">
+        <input type="text" id="mq-a-${id}" placeholder="Option A (for choice-based advanced types)">
+        <input type="text" id="mq-b-${id}" placeholder="Option B">
+        <input type="text" id="mq-c-${id}" placeholder="Option C">
+        <input type="text" id="mq-d-${id}" placeholder="Option D">
+      </div>
+      <div class="grid-2">
+        <select id="mq-ans-${id}" style="margin-bottom:8px;">
+          <option value="">— Correct Answer / Primary Key —</option>
+          <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
+        </select>
+        <input type="text" id="mq-accept-${id}" placeholder="Accept/options/image URL/keywords — use | to separate">
+      </div>
+      <textarea id="mq-items-json-${id}" rows="4" placeholder='Optional JSON items/schema for this question type' style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:monospace;font-size:12px;margin-bottom:8px;"></textarea>
+      <input type="text" id="mq-exp-${id}" placeholder="Explanation (optional)">`;
+    extraArea.innerHTML='';
+
   }
   compileManualQuestions();
 }
@@ -3470,6 +3652,22 @@ function compileManualQuestions(){
       const ans=JSON.stringify(items.map((_,i)=>i));
       questionsPool.push({q:qText,type:'ordering',items,exp,ans,a:'',b:'',c:'',d:''});
       valid++;
+
+
+    } else if(['assertion_reason','case_study','image_mcq','matrix','hot_text','code'].includes(type)){
+      const a=document.getElementById('mq-a-'+id)?.value.trim()||'';
+      const b=document.getElementById('mq-b-'+id)?.value.trim()||'';
+      const c=document.getElementById('mq-c-'+id)?.value.trim()||'';
+      const d=document.getElementById('mq-d-'+id)?.value.trim()||'';
+      const ans=document.getElementById('mq-ans-'+id)?.value||'';
+      const accept=document.getElementById('mq-accept-'+id)?.value.trim()||'';
+      const exp=document.getElementById('mq-exp-'+id)?.value.trim()||'';
+      const rawItems=document.getElementById('mq-items-json-'+id)?.value.trim()||'';
+      const q={q:qText,type,a,b,c,d,ans,exp};
+      if(accept)q.accept=accept;
+      if(rawItems){try{q.items=JSON.parse(rawItems);}catch(e){showToast('Invalid JSON in advanced manual question '+id);return;}}
+      if(ans||type==='code'||type==='matrix'||type==='hot_text'){questionsPool.push(q);valid++;}
+
     }
   });  // end ids.forEach
 
@@ -3562,6 +3760,19 @@ function parseXLSX(file,previewEl){
           if(type==='cloze' && (!Array.isArray(q.items)||!q.items.length) && q.ans)q.items=q.ans.split('|');
           if(type==='essay' && !q.items && accept)q.items={keywords:accept.split('|'),min_words:30};
           parsed.push(q);return;
+        }
+
+
+
+        if(['assertion_reason','case_study','image_mcq','matrix','hot_text','code'].includes(type)){
+          const itemsRaw=String(r[13]||'').trim(); let items=[];
+          if(itemsRaw){try{items=JSON.parse(itemsRaw);}catch(err){console.warn('XLSX '+type+' parse:',err);}}
+          const q={q:qText,type,a:cleanField(String(r[1]||'')),b:cleanField(String(r[2]||'')),c:cleanField(String(r[3]||'')),d:cleanField(String(r[4]||'')),ans:cleanAns(String(r[5]||''),type),exp:cleanField(String(r[6]||''))};
+          if(itemsRaw)q.items=items;
+          if(r[10]!==undefined&&r[10]!=='')q.accept=cleanField(String(r[10]));
+          if(r[9]!==undefined&&r[9]!=='')q.unit=cleanField(String(r[9]));
+          if(q.ans||type==='code'||type==='matrix'||type==='hot_text')parsed.push(q);
+          return;
         }
 
         const q={
@@ -3661,9 +3872,9 @@ function parseMCQText(text){
     let qText=qMatch[1].trim();
 
     // ── Detect type tag embedded in question text: [MCQ] [MRQ] [TF] [SHORT] [NUMERIC] [MATCHING] [ORDERING]
-    const tagMatch=qText.match(/\[(MCQ|MRQ|TF|SHORT|NUMERIC|MATCHING|ORDERING|CLOZE|ESSAY|CATEGORIZATION|MULTI_NUMERIC)\]/i);
+    const tagMatch=qText.match(/\[(MCQ|MRQ|TF|SHORT|NUMERIC|MATCHING|ORDERING|CLOZE|ESSAY|CATEGORIZATION|MULTI_NUMERIC|ASSERTION_REASON|CASE_STUDY|IMAGE_MCQ|MATRIX|HOT_TEXT|CODE)\]/i);
     const typeTag=tagMatch?tagMatch[1].toLowerCase():'';
-    qText=qText.replace(/\[(MCQ|MRQ|TF|SHORT|NUMERIC|MATCHING|ORDERING|CLOZE|ESSAY|CATEGORIZATION|MULTI_NUMERIC)\]/i,'').trim();
+    qText=qText.replace(/\[(MCQ|MRQ|TF|SHORT|NUMERIC|MATCHING|ORDERING|CLOZE|ESSAY|CATEGORIZATION|MULTI_NUMERIC|ASSERTION_REASON|CASE_STUDY|IMAGE_MCQ|MATRIX|HOT_TEXT|CODE)\]/i,'').trim();
 
     // ── Helper: get value after a label, e.g. "Answer: B" → "B"
     const getField=(label)=>{
@@ -3780,7 +3991,7 @@ function parseMCQText(text){
 
     // ── MCQ / MRQ / TF — all have A) B) C) D) options ────────────────
     // Extract options — support "A)" "A." "(A)" formats
-    const optRe=/^[(\s]?([ABCD])[.)]\s*(.+)/i;
+    const optRe=/^[(\s]?([ABCDE])[.)]\s*(.+)/i;
     const opts={};
     blockLines.forEach(l=>{
       const m=l.match(optRe);
@@ -3796,6 +4007,7 @@ function parseMCQText(text){
     // Detect MRQ: answer contains a comma, OR [MRQ] tag present
     const isMRQ=typeTag==='mrq'||(ansLine.includes(',')&&!typeTag);
     const isTF=typeTag==='tf';
+    const choiceAdvanced=['assertion_reason','case_study','image_mcq'].includes(typeTag);
 
     if(isMRQ){
       const ans=ansLine.split(',').map(s=>s.trim().toUpperCase()).filter(s=>['A','B','C','D'].includes(s)).sort().join(',');
@@ -3815,11 +4027,11 @@ function parseMCQText(text){
       });
     } else {
       // MCQ (default)
-      const ans=ansLine.toUpperCase().replace(/[^ABCD]/g,'');
-      if(!['A','B','C','D'].includes(ans))return;
-      if(!opts['A']||!opts['B'])return; // need at least 2 options for MCQ
+      const ans=ansLine.toUpperCase().replace(/[^ABCDE]/g,'');
+      if(!['A','B','C','D','E'].includes(ans))return;
+      if(!opts['A']||!opts['B'])return; // need at least 2 options for choice questions
       questions.push({
-        q:qText,type:'mcq',
+        q:qText,type:choiceAdvanced?typeTag:'mcq',
         a:opts['A']||'',b:opts['B']||'',c:opts['C']||'',d:opts['D']||'',
         ans,exp:expLine
       });
@@ -3866,10 +4078,13 @@ async function createExam(){
     negative_mark: document.getElementById('ex-negative').value || 0,
     instructions:  document.getElementById('ex-instructions').value || '',
     release_results: document.getElementById('ex-release').value === 'true',
+    anti_cheat_config: getAntiCheatConfig('ac'),
+    proctoring: document.getElementById('ac-proctor')?.checked === true,
+    math_keyboard: document.getElementById('ex-math-keyboard')?.value !== 'false',
     close_at:      closeAtVal ? new Date(closeAtVal).toISOString() : null
   };
   try{
-    await sbFetch('/rest/v1/exams','POST',payload);
+    await saveExamPayloadWithFallback(payload,'POST');
     showToast('✅ Assessment published! Code: '+payload.code+' — link and code are available in Assessments.');
     ['ex-sub','ex-class','ex-topic','ex-session','ex-dur','ex-count','ex-start-at'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('ex-term').value='';document.getElementById('ex-type').value='';
@@ -3877,6 +4092,8 @@ async function createExam(){
     const _cm=document.getElementById('ex-mode');if(_cm)_cm.value='open';
     const _ca=document.getElementById('ex-close-at');if(_ca)_ca.value='';
     const _on=document.getElementById('ex-open-now');if(_on)_on.value='false';
+    setAntiCheatForm('', normalizeAntiCheatConfig({anti_cheat_config:{proctoring:false,audio:false,max_violations:5}}));
+    const _mk=document.getElementById('ex-math-keyboard');if(_mk)_mk.value='true';
     document.getElementById('csv-file').value='';document.getElementById('csv-preview').innerText='';
     questionsPool=[];
     await loadExams();
@@ -4085,22 +4302,27 @@ function _downloadTextFile(filename, content, type='text/plain'){
 function downloadQuestionTemplate(){
   const csv=[
     'Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section',
-    '"What is 2 + 2?","3","4","5","6","B","2 + 2 = 4.","mcq","","","","","",""',
-    '"Which are products of photosynthesis?","Glucose","Water","Oxygen","Carbon dioxide","A,C","Glucose and oxygen are produced.","mrq","","","","false","",""',
-    '"Lagos is the capital of Nigeria.","True","False","","","B","Nigeria capital is Abuja.","tf","","","","","",""',
-    '"The chemical symbol for water is ___.","","","","","H2O","Water is H2O.","short","","","H₂O|water|h₂o","","",""',
-    '"Standard acceleration due to gravity","","","","","9.81","g is about 9.81 m/s².","numeric","0.05","m/s²","","","",""',
-    '"Match each element to its symbol","","","","","","","matching","","","","","[{""left"":""Sodium"",""right"":""Na""},{""left"":""Potassium"",""right"":""K""},{""left"":""DISTRACTOR"",""right"":""Au""}]",""',
-    '"Arrange the stages of mitosis","","","","","","","ordering","","","","","","[""Prophase"",""Metaphase"",""Anaphase"",""Telophase""]"',
-    '"Fill the blanks: Force = ___ × ___.","","","","","","Force equals mass times acceleration.","cloze","","","","","","[""mass|m"",""acceleration|a""]"',
-    '"Explain two reasons why exam integrity matters.","","","","","","Keyword-based essay scoring; teacher review is recommended.","essay","","","honesty|fairness|trust|validity|discipline","","","{""min_words"":30,""keywords"":[""honesty"",""fairness"",""trust"",""validity"",""discipline""]}"',
-    '"Categorise each item as Metal, Non-metal, or Metalloid.","","","","","","Each item earns partial credit.","categorization","","","","","","[{""item"":""Sodium"",""category"":""Metal""},{""item"":""Oxygen"",""category"":""Non-metal""},{""item"":""Silicon"",""category"":""Metalloid""}]"',
-    '"Solve the simultaneous equations x + y = 5 and x - y = 1. Enter x and y.","","","","","","Adding the equations gives 2x=6, so x=3 and y=2.","multi_numeric","","","","","","[{""label"":""x"",""answer"":3,""tolerance"":0},{""label"":""y"",""answer"":2,""tolerance"":0}]"'
+    '"What is 2 + 2?","3","4","5","6","B","2 + 2 = 4.","mcq","","","","","","","easy","number sense","Arithmetic"',
+    '"Which are products of photosynthesis?","Glucose","Water","Oxygen","Carbon dioxide","A,C","Glucose and oxygen are produced.","mrq","","","","false","","","medium","biology|plants","Photosynthesis"',
+    '"Lagos is the capital of Nigeria.","True","False","","","B","Nigeria capital is Abuja.","tf","","","","","","","easy","civics","Nigeria"',
+    '"The chemical symbol for water is ___.","","","","","H2O","Water is H₂O.","short","","","H₂O|water|h₂o|h2o","","","","easy","chemistry|symbols","Compounds"',
+    '"Standard acceleration due to gravity","","","","","9.81","g is about 9.81 m/s².","numeric","0.05","m/s²","","","","","medium","physics|calculation","Motion"',
+    '"Match each element to its symbol","","","","","","","matching","","","","","[{""left"":""Sodium"",""right"":""Na""},{""left"":""Potassium"",""right"":""K""},{""left"":""DISTRACTOR"",""right"":""Au""}]","","medium","chemistry|matching","Elements"',
+    '"Arrange the stages of mitosis","","","","","","","ordering","","","","","","[""Prophase"",""Metaphase"",""Anaphase"",""Telophase""]","medium","biology|sequence","Cell Division"',
+    '"Fill the blanks: Force = ___ × ___.","","","","","","Force equals mass times acceleration.","cloze","","","","","","[""mass|m"",""acceleration|a""]","medium","physics|formula","Forces"',
+    '"Explain two reasons why exam integrity matters.","","","","","","Keyword-based essay scoring; teacher review is recommended.","essay","","","honesty|fairness|trust|validity|discipline","","","{""min_words"":30,""keywords"":[""honesty"",""fairness"",""trust"",""validity"",""discipline""]}","challenging","ethics|essay","Integrity"',
+    '"Categorise each item as Metal, Non-metal, or Metalloid.","","","","","","Each item earns partial credit.","categorization","","","","","","[{""item"":""Sodium"",""category"":""Metal""},{""item"":""Oxygen"",""category"":""Non-metal""},{""item"":""Silicon"",""category"":""Metalloid""}]","medium","chemistry|classification","Periodic Table"',
+    '"Solve the simultaneous equations x + y = 5 and x - y = 1. Enter x and y.","","","","","","Adding the equations gives 2x=6, so x=3 and y=2.","multi_numeric","","","","","","[{""label"":""x"",""answer"":3,""tolerance"":0},{""label"":""y"",""answer"":2,""tolerance"":0}]","medium","math|simultaneous equations","Algebra"',
+    '"Assertion: Metals conduct electricity. Reason: Metals have free electrons.","Metals conduct electricity.","Metals have free electrons.","","","A","Free electrons explain electrical conductivity in metals.","assertion_reason","","","","","","{""assertion"":""Metals conduct electricity."",""reason"":""Metals have free electrons.""}","challenging","reasoning|chemistry","Metals"',
+    '"Based on the passage, what process formed droplets on the cold lid?","Evaporation","Condensation","Sublimation","Deposition","B","Water vapour cooled and condensed on the lid.","case_study","","","","","","{""passage"":""A beaker of warm water was covered with a cold lid. Droplets formed on the underside of the lid.""}","medium","science|case study","States of Matter"',
+    '"Identify the organ labelled X in the described heart diagram.","Aorta","Lung","Kidney","Stomach","A","The major artery leaving the heart is the aorta.","image_mcq","","","assets/sample-heart-diagram.png","","","{""image"":""assets/sample-heart-diagram.png""}","medium","biology|diagram","Circulatory System"',
+    '"Classify each statement as True or False.","","","","","","Each row is scored separately.","matrix","","","True|False","","","[{""statement"":""Water boils at 100°C at sea level."",""answer"":""True""},{""statement"":""CO₂ is oxygen gas."",""answer"":""False""}]","medium","science|matrix","General Science"',
+    '"Select the prime numbers.","","","","","","2 and 5 are prime; 4 is composite.","hot_text","","","","","","[{""text"":""2"",""correct"":true},{""text"":""4"",""correct"":false},{""text"":""5"",""correct"":true}]","easy","math|prime numbers","Number Theory"',
+    '"Write a JavaScript function that returns the larger of two numbers.","","","","","","Keyword/test scoring is automatic; teacher review is recommended for final code quality.","code","","JavaScript","function|return|Math.max|if","","","{""language"":""JavaScript"",""keywords"":[""function"",""return"",""Math.max""]}","challenging","coding|algorithm","Programming"'
   ].join('\n');
-  _downloadTextFile('hmg_cbt_question_template.csv','\uFEFF'+csv,'text/csv;charset=utf-8;');
-  showToast('✅ Question CSV template downloaded.');
+  _downloadTextFile('hmg_cbt_question_template_v3_17_types.csv','\uFEFF'+csv,'text/csv;charset=utf-8;');
+  showToast('✅ Question CSV template downloaded (17 question types).');
 }
-
 function downloadStudentTemplate(){
   const csv='FullName,StudentID,Class\nADEWALE SAMSON,SS/2026/001,SSS2A\nFATIMA IBRAHIM,SS/2026/002,SSS2A\nCHUKWUEMEKA OBI,SS/2026/003,SSS2B';
   _downloadTextFile('hmg_cbt_student_roster_template.csv','\uFEFF'+csv,'text/csv;charset=utf-8;');
@@ -4617,6 +4839,23 @@ function showRLSNotice(){
   document.body.appendChild(div);
 }
 
+async function clearAllFilteredResults(){
+  const data = getFilteredResults();
+  if(!data.length) return showToast('No results to delete.');
+  if(!confirm(`⚠️ Are you sure you want to permanently delete ALL ${data.length} results currently shown in this list? This cannot be undone.`)) return;
+  
+  let deleted = 0;
+  showToast(`⏳ Deleting ${data.length} results... please wait.`);
+  for(const r of data){
+    try {
+      await sbFetch(`/rest/v1/results?id=eq.${r.id}`,'DELETE');
+      deleted++;
+    } catch(e) { console.warn('Failed to delete', r.id, e); }
+  }
+  await loadResults();
+  showToast(`✅ ${deleted} result(s) deleted successfully.`);
+}
+
 // ════════════════════════════════════════════
 // EXPORT
 // ════════════════════════════════════════════
@@ -5085,10 +5324,10 @@ async function confirmDuplicate(){
     subject:encodeMeta('[COPY] '+m.subject,m.cls,m.term,m.topic,m.type,m.session,m.passmark),
     duration:exam.duration,attempt_limit:exam.attempt_limit,select_count:exam.select_count,
     code:newCode,csv_data:parseQuestionData(exam.csv_data),teacher_id:session.user.id,
-    exam_mode:exam.exam_mode,is_open:false,close_at:null
+    exam_mode:exam.exam_mode,is_open:false,close_at:null,anti_cheat_config:normalizeAntiCheatConfig(exam),proctoring:normalizeAntiCheatConfig(exam).proctoring,math_keyboard:exam.math_keyboard!==false
   };
   try{
-    await sbFetch('/rest/v1/exams','POST',payload);
+    await saveExamPayloadWithFallback(payload,'POST');
     document.getElementById('dup-modal').classList.add('hidden');
     _dupExamId=null;btn.disabled=false;btn.innerText='✓ Duplicate';
     await loadExams();
@@ -5125,6 +5364,9 @@ function openEditExamModal(id) {
   document.getElementById('edit-ex-passmark').value = m.passmark || 50;
   document.getElementById('edit-ex-open-now').value = exam.is_open ? 'true' : 'false';
   document.getElementById('edit-ex-mode').value = exam.exam_mode || 'open';
+  const acfg = normalizeAntiCheatConfig(exam);
+  setAntiCheatForm('edit', acfg);
+  const editMk=document.getElementById('edit-ex-math-keyboard'); if(editMk)editMk.value = exam.math_keyboard === false ? 'false' : 'true';
   
   // Set close-at if exists
   if (exam.close_at) {
@@ -5222,12 +5464,15 @@ async function saveExamEdits() {
       select_count: selectCount,
       is_open: isOpen,
       exam_mode: examMode,
+      anti_cheat_config: getAntiCheatConfig('edit'),
+      proctoring: document.getElementById('edit-ac-proctor')?.checked === true,
+      math_keyboard: document.getElementById('edit-ex-math-keyboard')?.value !== 'false',
       close_at: closeAt,
       updated_at: new Date().toISOString()
     };
     
     // Update the exam in Supabase
-    await sbFetch(`/rest/v1/exams?id=eq.${_editExamId}`, 'PATCH', updateData);
+    await saveExamPayloadWithFallback(updateData,'PATCH',_editExamId);
     
     // Update local data
     exam.subject = encodedMeta;
@@ -5236,6 +5481,9 @@ async function saveExamEdits() {
     exam.select_count = selectCount;
     exam.is_open = isOpen;
     exam.exam_mode = examMode;
+    exam.anti_cheat_config = updateData.anti_cheat_config;
+    exam.proctoring = updateData.proctoring;
+    exam.math_keyboard = updateData.math_keyboard;
     exam.close_at = closeAt;
     exam.updated_at = new Date().toISOString();
     
