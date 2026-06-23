@@ -326,4 +326,7 @@ Before deployment, run `COMPLETE_SQL_SETUP.sql`, then upload all static files. C
 ## Search engine and PWA deployment checks
 
 After deployment, verify `/robots.txt`, `/sitemap.xml`, `/manifest.webmanifest`, and `/sw.js` load publicly. Submit the sitemap URL to Google Search Console and Bing Webmaster Tools. Test PWA installation on Android Chrome, iPhone Safari, and desktop Chrome/Edge.
+## Repair deployment note
+
+After uploading this repair package and redeploying to Vercel, hard-refresh the browser or clear site data so the old service worker/browser cache does not keep the broken `teacher.html`. Then test all Teacher Dashboard sidebar menus.
 

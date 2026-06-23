@@ -238,4 +238,7 @@ CBT v3 updates the teacher question-type reference, CSV template download, and `
 ## SEO, PWA and lead generation
 
 The platform includes `robots.txt`, `sitemap.xml`, `llms.txt`, improved PWA manifest metadata, service worker caching, Open Graph/Twitter metadata, JSON-LD structured data, and landing-page lead links to the HMG Concepts ecosystem. See `SEO_PWA_LEAD_GENERATION.md`.
+## Repair release note
+
+This package fixes a critical `teacher.html` layout nesting bug that prevented Assessments, Results, Analytics, Settings and Students pages from appearing after sidebar clicks. See `CBT_REPAIR_AUDIT_REPORT.md`.
 

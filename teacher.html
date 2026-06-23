@@ -1235,6 +1235,7 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           <button onclick="createExam()">🚀 Publish Assessment</button>
         </div>
       </div>
+    </div>
     </div><!-- /create -->
 
     <!-- ══════════ PAGE: ASSESSMENTS ══════════ -->
@@ -2354,10 +2355,24 @@ function setAntiCheatForm(prefix, cfg){
   const max=document.getElementById(prefix==='edit'?'edit-ac-max':'ac-max'); if(max)max.value=cfg.max_violations||5;
 }
 
+
+function repairTeacherPageLayout(){
+  const main=document.getElementById('main-content');
+  if(!main)return;
+  ['dashboard','create','assessments','results','students','analytics','settings'].forEach(p=>{
+    const el=document.getElementById('page-'+p);
+    if(el && el.parentElement!==main){
+      main.appendChild(el);
+      console.warn('[CBT Repair] Moved page-'+p+' back under #main-content.');
+    }
+  });
+}
+
 // ════════════════════════════════════════════
 // NAVIGATION — merged, handles all pages
 // ════════════════════════════════════════════
 function navigate(page){
+  repairTeacherPageLayout();
   const pages=['dashboard','create','assessments','results','students','settings','analytics'];
   pages.forEach(p=>{
     const el=document.getElementById('page-'+p);
@@ -2384,7 +2399,7 @@ function navigate(page){
       closeInput.min=now.toISOString().slice(0,16);
     }
   }
-  if(page==='settings')updateSettingsPage();
+  if(page==='settings'){try{updateSettingsPage();}catch(e){console.warn('[CBT Repair] Settings render failed:',e);}}
 
   if(page==='analytics'){
     const sel=document.getElementById('analytics-exam-filter');
@@ -2396,11 +2411,11 @@ function navigate(page){
       }).join('');
       sel.value=cur;
     }
-    renderAnalytics();
+    try{renderAnalytics();}catch(e){console.warn('[CBT Repair] Analytics render failed:',e);}
   }
 
-  closeSidebar();
-  window.scrollTo(0,0);
+  try{closeSidebar();}catch(e){}
+  try{window.scrollTo(0,0);}catch(e){}
 }
 
 // ════════════════════════════════════════════
@@ -2977,6 +2992,7 @@ function initDashboard(email){
   const vs=document.getElementById('verify-screen');
   if(vs){vs.style.display='none';vs.classList.add('hidden');}
   document.getElementById('app').classList.remove('hidden');
+  repairTeacherPageLayout();
 
   // Set sidebar user info
   document.getElementById('sidebar-email').innerText=email;
@@ -3013,8 +3029,8 @@ function initDashboard(email){
 
 // Load exams first, then results (results query depends on exam IDs)
 async function loadData(){
-  await loadExams();
-  await loadResults();
+  try{await loadExams();}catch(e){console.error('[CBT Repair] Could not load exams:',e);showToast('⚠️ Could not load exams. Check Supabase SQL/RLS and refresh.');allExams=Array.isArray(allExams)?allExams:[];renderExamList?.();updateDashboard?.();}
+  try{await loadResults();}catch(e){console.error('[CBT Repair] Could not load results:',e);showToast('⚠️ Could not load results. Check Supabase SQL/RLS.');allResults=Array.isArray(allResults)?allResults:[];updateDashboard?.();}
 }
 
 function resetInactivityTimer(){
@@ -3559,7 +3575,9 @@ function importQuestionsFromExam() {
         const qList = parseQuestionData(exam.csv_data);
         if(!Array.isArray(qList)) return showToast('Invalid question data format.');
         questionsPool = questionsPool.concat(qList);
-        renderQuestionsPreview();
+        updatePoolCount();
+        const cp=document.getElementById('csv-preview')||document.getElementById('manual-preview');
+        if(cp)cp.innerText=`✅ Imported ${qList.length} reusable question(s). Total pool: ${questionsPool.length}.`;
         showToast(`✅ Imported ${qList.length} questions successfully.`);
     } catch(e) {
         showToast('Error importing questions.');
@@ -4107,6 +4125,7 @@ async function createExam(){
 async function loadExams(){
   if(!session||!session.user||!session.user.id)return;
   allExams=await sbFetch(`/rest/v1/exams?teacher_id=eq.${session.user.id}&select=*&order=created_at.desc`);
+  if(!Array.isArray(allExams)){console.warn('[CBT Repair] exams response was not an array; using empty list.', allExams); allExams=[];}
 
   // SANITISE: clean any dirty `ans` fields in stored questions.
   // Only apply A/B/C/D normalisation to MCQ and TF types — other types store free-text answers.
@@ -4580,6 +4599,11 @@ async function loadResults(){
           console.error('[CBT] All results fetch attempts failed:', e3.message);
         }
       }
+    }
+
+    if(!Array.isArray(allResults)){
+      console.warn('[CBT Repair] results response was not an array; using empty list.', allResults);
+      allResults=[];
     }
 
     // Surface a visible error to the teacher — silent [] hides real problems

@@ -113,4 +113,11 @@
 - Added HMG Concepts ecosystem lead-generation section with links to HMG Academy, HMG Concepts, project enquiry and WhatsApp enquiry.
 - Improved PWA install metadata and added a landing-page install CTA plus device-specific install instructions.
 - Updated `_headers` and service worker cache list for SEO/PWA support files.
+## Repair release — 2026-06-23
+
+- Fixed critical Teacher Dashboard navigation bug where Assessments, Results, Analytics, Settings and Students appeared blank because those sections were accidentally nested inside the hidden Create Exam page.
+- Added defensive `repairTeacherPageLayout()` to prevent future page-nesting regressions.
+- Added safer dashboard data loading so Supabase/RLS errors do not break page navigation.
+- Fixed undefined `renderQuestionsPreview()` call in reusable question import.
+- Added `vercel.json` headers for Vercel deployment.
 
