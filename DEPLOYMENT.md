@@ -335,4 +335,7 @@ After deployment, hard-refresh or clear browser site data because the service wo
 ## CBT v5 deployment check
 
 After redeployment, open Teacher Dashboard → Create Exam and confirm the Exam Type dropdown contains Admission Screening, Scholarship Test, Common Entrance, Recruitment / Aptitude Test, Certification Exam, STEM Exam, UTME/JAMB Practice and WAEC/NECO/BECE Practice.
+## CBT v6 SQL deployment warning
+
+If Supabase previously failed at `admin_get_platform_stats()` with a mismatched-parentheses error near `pass_rate`, use the repaired `COMPLETE_SQL_SETUP.sql` in this package and run it from top to bottom. The full SQL has been parsed after the repair.
 

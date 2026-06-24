@@ -1109,9 +1109,11 @@ BEGIN
     COALESCE((SELECT ROUND(AVG((score / NULLIF(total, 0)) * 100), 2) FROM public.results WHERE total &gt; 0), 0) AS avg_score,
     COALESCE((
       SELECT ROUND(
-        (COUNT(*) FILTER (WHERE (score / NULLIF(total, 0)) * 100 &gt;= 50)::NUMERIC /
-         NULLIF(COUNT(*), 0) * 100, 2)
-      FROM public.results WHERE total &gt; 0
+        AVG(CASE WHEN (score / NULLIF(total, 0)) * 100 &gt;= 50 THEN 1 ELSE 0 END) * 100,
+        2
+      )
+      FROM public.results
+      WHERE total &gt; 0
     ), 0) AS pass_rate;
 END;
 $$;

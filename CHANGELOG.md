@@ -133,4 +133,11 @@
 - Added exam-type presets that apply recommended duration, attempt limit, release control, pass mark and instructions for key assessment categories.
 - Updated landing-page exam category pills and documentation.
 - Added `CBT_V5_EXAM_TYPE_AND_ENTERPRISE_REPORT.md`.
+## CBT v6 — Fullstack SaaS SQL repair
+
+- Fixed Supabase SQL error in `admin_get_platform_stats()` pass-rate calculation that caused `ERROR 42601: mismatched parentheses at or near ";"`.
+- Rewrote pass-rate calculation using `AVG(CASE WHEN ... THEN 1 ELSE 0 END) * 100` for clearer Postgres syntax.
+- Parsed the full `COMPLETE_SQL_SETUP.sql` successfully after repair.
+- Added SaaS-ready `institutions` and `audit_logs` tables plus tenant columns for profiles, exams, students and results.
+- Added `FULLSTACK_SAAS_ARCHITECTURE.md`.
 

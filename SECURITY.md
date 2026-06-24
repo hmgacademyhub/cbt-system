@@ -209,4 +209,7 @@ CBT v2 adds an admin control mode for teacher dashboards. The admin does not rec
 ## CBT v3 AI prompt safety
 
 `PROMPT_TEMPLATE.md` is for manual CSV question generation only. It must not introduce runtime AI APIs, paid API calls, service-role keys, or automatic external question generation inside the platform. Teachers may copy the prompt into any tool, review the output, and upload CSV manually.
+## CBT v6 SaaS security additions
+
+The SQL adds RLS-enabled `institutions` and `audit_logs` tables. Platform admins can manage institutions and audit logs; users can read their own audit entries. These structures prepare the platform for tenant-aware SaaS operation without exposing service-role keys.
 

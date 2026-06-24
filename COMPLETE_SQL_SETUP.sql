@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════
--- HMG ACADEMY CBT PRO v3.1 ENTERPRISE — COMPLETE SUPABASE SETUP
+-- HMG ACADEMY CBT PRO v6 ENTERPRISE / FULLSTACK SAAS — COMPLETE SUPABASE SETUP
 -- ═══════════════════════════════════════════════════════════════════
 -- Run this WHOLE file once in Supabase Dashboard → SQL Editor.
 -- It is intentionally idempotent: safe to re-run after future updates.
@@ -12,6 +12,8 @@
 --   5. Result scores support decimals for partial-credit question types.
 --   6. Public exam loading hides question data before scheduled start time.
 --   7. Existing installations are upgraded without dropping user data.
+--   8. v6 fixes admin_get_platform_stats() pass_rate SQL parentheses issue.
+--   9. v6 adds SaaS-ready institution, branding, settings, and audit-log tables.
 --
 -- Brand: HMG Academy CBT Pro / HMG Concepts
 -- Founder: Adewale Samson Adeagbo
@@ -28,6 +30,33 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 1: CORE TABLES
 -- ═══════════════════════════════════════════════════════════════════
+
+-- SaaS / multi-tenant readiness: institutions represent schools, centres,
+-- organisations, training providers, or HMG-managed client deployments.
+CREATE TABLE IF NOT EXISTS public.institutions (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT        NOT NULL DEFAULT 'HMG Academy',
+  slug        TEXT        UNIQUE,
+  owner_id    UUID        REFERENCES auth.users(id) ON DELETE SET NULL,
+  plan        TEXT        NOT NULL DEFAULT 'free',
+  status      TEXT        NOT NULL DEFAULT 'active',
+  branding    JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  settings    JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID        REFERENCES public.institutions(id) ON DELETE SET NULL,
+  actor_id       UUID        REFERENCES auth.users(id) ON DELETE SET NULL,
+  actor_email    TEXT        DEFAULT '',
+  action         TEXT        NOT NULL,
+  entity_type    TEXT        DEFAULT '',
+  entity_id      TEXT        DEFAULT '',
+  metadata       JSONB       NOT NULL DEFAULT '{}'::jsonb,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   id          UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -137,6 +166,11 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role       TEXT NOT NULL DE
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin   BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status     TEXT NOT NULL DEFAULT 'pending';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS institution_id UUID REFERENCES public.institutions(id) ON DELETE SET NULL;
+
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS institution_id UUID REFERENCES public.institutions(id) ON DELETE SET NULL;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS institution_id UUID REFERENCES public.institutions(id) ON DELETE SET NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS institution_id UUID REFERENCES public.institutions(id) ON DELETE SET NULL;
 
 -- Decimal scores are required for MRQ, matching, ordering, cloze, essay keyword
 -- scoring, categorisation, and multi-numeric partial credit.
@@ -158,11 +192,18 @@ UPDATE public.results SET cert_code = '' WHERE cert_code IS NULL;
 -- STEP 3: INDEXES AND DATA QUALITY CONSTRAINTS
 -- ═══════════════════════════════════════════════════════════════════
 
+CREATE INDEX IF NOT EXISTS idx_institutions_slug      ON public.institutions(slug);
+CREATE INDEX IF NOT EXISTS idx_institutions_owner     ON public.institutions(owner_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_institution ON public.audit_logs(institution_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor       ON public.audit_logs(actor_id, created_at DESC);
+
 CREATE INDEX IF NOT EXISTS idx_profiles_status       ON public.profiles(status);
 CREATE INDEX IF NOT EXISTS idx_profiles_email        ON public.profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_is_admin     ON public.profiles(is_admin);
+CREATE INDEX IF NOT EXISTS idx_profiles_institution  ON public.profiles(institution_id);
 
 CREATE INDEX IF NOT EXISTS idx_exams_teacher_id      ON public.exams(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_exams_institution     ON public.exams(institution_id);
 CREATE INDEX IF NOT EXISTS idx_exams_code            ON public.exams(code);
 CREATE INDEX IF NOT EXISTS idx_exams_is_open         ON public.exams(is_open);
 CREATE INDEX IF NOT EXISTS idx_exams_created_at      ON public.exams(created_at DESC);
@@ -170,6 +211,7 @@ CREATE INDEX IF NOT EXISTS idx_exams_archived        ON public.exams(is_archived
 CREATE INDEX IF NOT EXISTS idx_exams_start_close     ON public.exams(start_at, close_at);
 
 CREATE INDEX IF NOT EXISTS idx_results_exam_id       ON public.results(exam_id);
+CREATE INDEX IF NOT EXISTS idx_results_institution   ON public.results(institution_id);
 CREATE INDEX IF NOT EXISTS idx_results_student_name  ON public.results(student_name);
 CREATE INDEX IF NOT EXISTS idx_results_student_ref   ON public.results(student_id_ref);
 CREATE INDEX IF NOT EXISTS idx_results_created_at    ON public.results(created_at DESC);
@@ -177,6 +219,7 @@ CREATE INDEX IF NOT EXISTS idx_results_violations    ON public.results(violation
 CREATE INDEX IF NOT EXISTS idx_results_exam_student  ON public.results(exam_id, lower(student_name), lower(student_class));
 
 CREATE INDEX IF NOT EXISTS idx_students_teacher_id   ON public.students(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_students_institution  ON public.students(institution_id);
 CREATE INDEX IF NOT EXISTS idx_students_student_id   ON public.students(student_id);
 CREATE INDEX IF NOT EXISTS idx_students_class        ON public.students(class);
 
@@ -274,6 +317,8 @@ $$;
 -- STEP 5: ENABLE ROW-LEVEL SECURITY
 -- ═══════════════════════════════════════════════════════════════════
 
+ALTER TABLE public.institutions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exams    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.results  ENABLE ROW LEVEL SECURITY;
@@ -318,6 +363,41 @@ DROP POLICY IF EXISTS "Admins manage all students" ON public.students;
 -- Important: Students use RPC functions for exam loading, student-ID
 -- verification, and attempt counting. Therefore no broad anonymous SELECT
 -- policy is created on exams, results, or students.
+
+DROP POLICY IF EXISTS "Admins manage all institutions" ON public.institutions;
+DROP POLICY IF EXISTS "Owners read own institution" ON public.institutions;
+DROP POLICY IF EXISTS "Authenticated insert own institution" ON public.institutions;
+DROP POLICY IF EXISTS "Institution owners update own institution" ON public.institutions;
+DROP POLICY IF EXISTS "Admins manage audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Users read own audit logs" ON public.audit_logs;
+
+-- SaaS institutions and audit logs
+CREATE POLICY "Admins manage all institutions"
+  ON public.institutions FOR ALL TO authenticated
+  USING (public.is_platform_admin())
+  WITH CHECK (public.is_platform_admin());
+
+CREATE POLICY "Owners read own institution"
+  ON public.institutions FOR SELECT TO authenticated
+  USING (owner_id = auth.uid() OR public.is_platform_admin());
+
+CREATE POLICY "Authenticated insert own institution"
+  ON public.institutions FOR INSERT TO authenticated
+  WITH CHECK (owner_id = auth.uid() OR public.is_platform_admin());
+
+CREATE POLICY "Institution owners update own institution"
+  ON public.institutions FOR UPDATE TO authenticated
+  USING (owner_id = auth.uid() OR public.is_platform_admin())
+  WITH CHECK (owner_id = auth.uid() OR public.is_platform_admin());
+
+CREATE POLICY "Admins manage audit logs"
+  ON public.audit_logs FOR ALL TO authenticated
+  USING (public.is_platform_admin())
+  WITH CHECK (public.is_platform_admin());
+
+CREATE POLICY "Users read own audit logs"
+  ON public.audit_logs FOR SELECT TO authenticated
+  USING (actor_id = auth.uid() OR public.is_platform_admin());
 
 -- Profiles
 CREATE POLICY "Users read own profile"
@@ -464,6 +544,36 @@ CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_institutions_updated_at ON public.institutions;
+CREATE TRIGGER update_institutions_updated_at
+  BEFORE UPDATE ON public.institutions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+
+CREATE OR REPLACE FUNCTION public.log_audit_event(
+  p_action TEXT,
+  p_entity_type TEXT DEFAULT '',
+  p_entity_id TEXT DEFAULT '',
+  p_metadata JSONB DEFAULT '{}'::jsonb
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_id UUID;
+  v_inst UUID;
+BEGIN
+  SELECT institution_id INTO v_inst FROM public.profiles WHERE id = auth.uid() LIMIT 1;
+  INSERT INTO public.audit_logs(institution_id, actor_id, actor_email, action, entity_type, entity_id, metadata)
+  VALUES (v_inst, auth.uid(), COALESCE(auth.jwt() ->> 'email', ''), p_action, p_entity_type, p_entity_id, COALESCE(p_metadata, '{}'::jsonb))
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END;
+$$;
 
 -- ═══════════════════════════════════════════════════════════════════
 -- STEP 9: PUBLIC STUDENT RPC FUNCTIONS
@@ -862,9 +972,11 @@ BEGIN
     COALESCE((SELECT ROUND(AVG((score / NULLIF(total, 0)) * 100), 2) FROM public.results WHERE total > 0), 0) AS avg_score,
     COALESCE((
       SELECT ROUND(
-        (COUNT(*) FILTER (WHERE (score / NULLIF(total, 0)) * 100 >= 50)::NUMERIC /
-         NULLIF(COUNT(*), 0) * 100, 2)
-      FROM public.results WHERE total > 0
+        AVG(CASE WHEN (score / NULLIF(total, 0)) * 100 >= 50 THEN 1 ELSE 0 END) * 100,
+        2
+      )
+      FROM public.results
+      WHERE total > 0
     ), 0) AS pass_rate;
 END;
 $$;
@@ -923,6 +1035,8 @@ GRANT SELECT, INSERT ON public.results TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.exams TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.results TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.students TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.institutions TO authenticated;
+GRANT SELECT, INSERT ON public.audit_logs TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
 
 REVOKE ALL ON FUNCTION public.get_exam_teacher_id(UUID) FROM PUBLIC, anon, authenticated;
@@ -941,6 +1055,7 @@ GRANT EXECUTE ON FUNCTION public.get_exam_attempt_count(UUID, TEXT, TEXT, TEXT) 
 
 REVOKE ALL ON FUNCTION public.submit_student_result(JSONB) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.verify_certificate(TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.log_audit_event(TEXT, TEXT, TEXT, JSONB) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_all_profiles() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_all_exams() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.admin_get_all_results() FROM PUBLIC, anon, authenticated;
@@ -951,6 +1066,7 @@ REVOKE ALL ON FUNCTION public.admin_get_platform_stats() FROM PUBLIC, anon, auth
 REVOKE ALL ON FUNCTION public.admin_get_exam_results(UUID) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.submit_student_result(JSONB) TO anon;
+GRANT EXECUTE ON FUNCTION public.log_audit_event(TEXT, TEXT, TEXT, JSONB) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_certificate(TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_profiles() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_get_all_exams() TO authenticated;
@@ -1010,7 +1126,7 @@ ON CONFLICT (id) DO NOTHING;
 SELECT tablename, rowsecurity
 FROM pg_tables
 WHERE schemaname = 'public'
-  AND tablename IN ('profiles', 'exams', 'results', 'students')
+  AND tablename IN ('institutions','audit_logs','profiles', 'exams', 'results', 'students')
 ORDER BY tablename;
 
 -- 2. Policies. Expected: teacher/admin policies and NO broad anonymous SELECT.

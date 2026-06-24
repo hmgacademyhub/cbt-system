@@ -247,4 +247,7 @@ CBT v4 adds PWA install enforcement, student hide/show question navigator, teach
 ## CBT v5 exam categories
 
 CBT v5 expands the Exam Type dropdowns for school, admission, scholarship, recruitment, certification, STEM and standardised-practice workflows. Key exam types apply recommended settings automatically, but teachers can edit all settings before publishing.
+## CBT v6 fullstack/SaaS repair
+
+CBT v6 fixes the Supabase SQL pass-rate syntax error and adds SaaS-ready institution/audit-log database structures. The platform remains a static frontend with Supabase Auth/Postgres/RLS/RPC backend, making it a free-tier-friendly fullstack SaaS-style app. See `FULLSTACK_SAAS_ARCHITECTURE.md`.
 

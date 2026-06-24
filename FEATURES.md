@@ -308,4 +308,9 @@ The system supports MCQ, MRQ, True/False, Short Answer, Numeric, Matching, Order
 ## CBT v5 exam-type coverage
 
 The platform now explicitly supports Admission Screening, Scholarship Tests, Common Entrance Exams, Recruitment/Aptitude Tests, Certification Exams, STEM Exams, UTME/JAMB Practice, WAEC/NECO/BECE Practice, Post-UTME Screening, Placement Tests, Training Assessments and IELTS/SAT Practice. Presets apply sensible defaults while still allowing teacher editing.
+## CBT v6 fullstack SaaS readiness
+
+- Supabase backend includes SaaS-ready institution and audit-log tables.
+- Optional `institution_id` columns prepare profiles, exams, students and results for multi-tenant school deployments.
+- Fullstack architecture remains free-tier friendly: static frontend + Supabase Auth/Postgres/RLS/RPC backend.
 
