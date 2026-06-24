@@ -76,6 +76,7 @@ async function runChecks(){
  const teacherV4=await textOf('teacher.html');
  results.push(row(studentV4.includes('toggleQuestionNavigator')&&studentV4.includes('floating-nav-toggle')?'ok':'warn','Student navigator hide/show','Students can hide/unhide question numbering during exams.'));
  results.push(row(teacherV4.includes('teacherPrintStudentResult')&&teacherV4.includes('bulkPrintFilteredCertificates')?'ok':'warn','Teacher result/certificate printing','Teacher-side individual and bulk result/certificate printing functions are present.'));
+ results.push(row(teacherV4.includes('Admission Screening')&&teacherV4.includes('Common Entrance')&&teacherV4.includes('Recruitment / Aptitude Test')&&teacherV4.includes('Certification Exam')?'ok':'warn','Expanded exam-type coverage','Admission, scholarship, common entrance, recruitment, certification, STEM and standardised practice exam types are present.'));
  const sw=await textOf('sw.js');
  results.push(row(sw.includes('CACHE_NAME')&&sw.includes('offline.html')?'ok':'bad','Service worker',sw?'Service worker file found with offline fallback.':'sw.js missing.'));
  const teacher=await textOf('teacher.html'); const student=await textOf('student.html'); const admin=await textOf('admin.html'); const sql=await textOf('COMPLETE_SQL_SETUP.sql');

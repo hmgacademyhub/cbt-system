@@ -305,4 +305,7 @@ The system supports MCQ, MRQ, True/False, Short Answer, Numeric, Matching, Order
 - Teacher can print individual and bulk result slips/certificates.
 - Teacher can download each student’s question-and-answer packet for audit, parent communication, admission screening and records.
 - Compatible with common entrance, admission, scholarship, terminal, mock, certification, recruitment and STEM/coding exams.
+## CBT v5 exam-type coverage
+
+The platform now explicitly supports Admission Screening, Scholarship Tests, Common Entrance Exams, Recruitment/Aptitude Tests, Certification Exams, STEM Exams, UTME/JAMB Practice, WAEC/NECO/BECE Practice, Post-UTME Screening, Placement Tests, Training Assessments and IELTS/SAT Practice. Presets apply sensible defaults while still allowing teacher editing.
 

@@ -745,14 +745,34 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
             </select>
           </div>
           <div><label>Exam Type</label>
-            <select id="ex-type">
+            <select id="ex-type" onchange="applyExamTypePreset()">
               <option value="">— Select Type —</option>
-              <option value="Class Test">Class Test</option>
-              <option value="CA">Continuous Assessment (CA)</option>
-              <option value="Mid-Term">Mid-Term Exam</option>
-              <option value="Exam">Terminal Exam</option>
-              <option value="Mock">Mock Exam</option>
-              <option value="Practice">Practice / Revision</option>
+              <optgroup label="School / Classroom">
+                <option value="Class Test">Class Test</option>
+                <option value="CA">Continuous Assessment (CA)</option>
+                <option value="Mid-Term">Mid-Term Exam</option>
+                <option value="Exam">Terminal Exam</option>
+                <option value="Mock">Mock Exam</option>
+                <option value="Practice">Practice / Revision</option>
+                <option value="STEM Exam">STEM Exam</option>
+              </optgroup>
+              <optgroup label="Admissions / External Candidates">
+                <option value="Admission Screening">Admission Screening</option>
+                <option value="Common Entrance">Common Entrance Exam</option>
+                <option value="Scholarship Test">Scholarship Test</option>
+                <option value="Post-UTME Screening">Post-UTME Screening</option>
+                <option value="Placement Test">Placement Test</option>
+              </optgroup>
+              <optgroup label="Standardised Practice">
+                <option value="UTME / JAMB Practice">UTME / JAMB Practice</option>
+                <option value="WAEC / NECO / BECE Practice">WAEC / NECO / BECE Practice</option>
+                <option value="IELTS / SAT Practice">IELTS / SAT Practice</option>
+              </optgroup>
+              <optgroup label="Professional / Enterprise">
+                <option value="Recruitment / Aptitude Test">Recruitment / Aptitude Test</option>
+                <option value="Certification Exam">Certification Exam</option>
+                <option value="Training Assessment">Training Assessment</option>
+              </optgroup>
             </select>
           </div>
         </div>
@@ -1275,6 +1295,18 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
                 <option value="Exam">Terminal Exam</option>
                 <option value="Mock">Mock</option>
                 <option value="Practice">Practice</option>
+                <option value="STEM Exam">STEM Exam</option>
+                <option value="Admission Screening">Admission Screening</option>
+                <option value="Common Entrance">Common Entrance</option>
+                <option value="Scholarship Test">Scholarship Test</option>
+                <option value="Post-UTME Screening">Post-UTME Screening</option>
+                <option value="Placement Test">Placement Test</option>
+                <option value="UTME / JAMB Practice">UTME / JAMB Practice</option>
+                <option value="WAEC / NECO / BECE Practice">WAEC / NECO / BECE Practice</option>
+                <option value="IELTS / SAT Practice">IELTS / SAT Practice</option>
+                <option value="Recruitment / Aptitude Test">Recruitment / Aptitude Test</option>
+                <option value="Certification Exam">Certification Exam</option>
+                <option value="Training Assessment">Training Assessment</option>
               </select>
             </div>
             <div><label>Status</label>
@@ -1356,6 +1388,18 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
                 <option value="Exam">Terminal Exam</option>
                 <option value="Mock">Mock</option>
                 <option value="Practice">Practice</option>
+                <option value="STEM Exam">STEM Exam</option>
+                <option value="Admission Screening">Admission Screening</option>
+                <option value="Common Entrance">Common Entrance</option>
+                <option value="Scholarship Test">Scholarship Test</option>
+                <option value="Post-UTME Screening">Post-UTME Screening</option>
+                <option value="Placement Test">Placement Test</option>
+                <option value="UTME / JAMB Practice">UTME / JAMB Practice</option>
+                <option value="WAEC / NECO / BECE Practice">WAEC / NECO / BECE Practice</option>
+                <option value="IELTS / SAT Practice">IELTS / SAT Practice</option>
+                <option value="Recruitment / Aptitude Test">Recruitment / Aptitude Test</option>
+                <option value="Certification Exam">Certification Exam</option>
+                <option value="Training Assessment">Training Assessment</option>
               </select>
             </div>
             <div><label>Integrity</label>
@@ -2181,14 +2225,34 @@ SELECT 'Run COMPLETE_SQL_SETUP.sql for the canonical HMG Academy CBT v3.1 databa
         </div>
         <div><label>Exam Type</label>
           <select id="edit-ex-type">
-            <option value="">— Select Type —</option>
-            <option value="Class Test">Class Test</option>
-            <option value="CA">Continuous Assessment (CA)</option>
-            <option value="Mid-Term">Mid-Term Exam</option>
-            <option value="Exam">Terminal Exam</option>
-            <option value="Mock">Mock Exam</option>
-            <option value="Practice">Practice / Revision</option>
-          </select>
+              <option value="">— Select Type —</option>
+              <optgroup label="School / Classroom">
+                <option value="Class Test">Class Test</option>
+                <option value="CA">Continuous Assessment (CA)</option>
+                <option value="Mid-Term">Mid-Term Exam</option>
+                <option value="Exam">Terminal Exam</option>
+                <option value="Mock">Mock Exam</option>
+                <option value="Practice">Practice / Revision</option>
+                <option value="STEM Exam">STEM Exam</option>
+              </optgroup>
+              <optgroup label="Admissions / External Candidates">
+                <option value="Admission Screening">Admission Screening</option>
+                <option value="Common Entrance">Common Entrance Exam</option>
+                <option value="Scholarship Test">Scholarship Test</option>
+                <option value="Post-UTME Screening">Post-UTME Screening</option>
+                <option value="Placement Test">Placement Test</option>
+              </optgroup>
+              <optgroup label="Standardised Practice">
+                <option value="UTME / JAMB Practice">UTME / JAMB Practice</option>
+                <option value="WAEC / NECO / BECE Practice">WAEC / NECO / BECE Practice</option>
+                <option value="IELTS / SAT Practice">IELTS / SAT Practice</option>
+              </optgroup>
+              <optgroup label="Professional / Enterprise">
+                <option value="Recruitment / Aptitude Test">Recruitment / Aptitude Test</option>
+                <option value="Certification Exam">Certification Exam</option>
+                <option value="Training Assessment">Training Assessment</option>
+              </optgroup>
+            </select>
         </div>
       </div>
       <div class="grid-2">
@@ -4059,6 +4123,36 @@ function parseMCQText(text){
   });
 
   return questions;
+}
+
+
+function applyExamTypePreset(){
+  const type=document.getElementById('ex-type')?.value||'';
+  const dur=document.getElementById('ex-dur');
+  const limit=document.getElementById('ex-limit');
+  const release=document.getElementById('ex-release');
+  const instructions=document.getElementById('ex-instructions');
+  const pass=document.getElementById('ex-passmark');
+  const mode=document.getElementById('ex-mode');
+  const preset={
+    'Admission Screening':{dur:60,limit:'1',release:'false',pass:50,txt:'Admission screening: enter your correct name and contact/category details. Results may be reviewed by the admissions team before publication.'},
+    'Common Entrance':{dur:60,limit:'1',release:'false',pass:50,txt:'Common entrance exam: answer all questions independently. The school may print result slips and certificates after submission.'},
+    'Scholarship Test':{dur:60,limit:'1',release:'false',pass:70,txt:'Scholarship test: merit-based assessment. Ensure your identity details are correct. Results are subject to school review.'},
+    'Recruitment / Aptitude Test':{dur:45,limit:'1',release:'false',pass:50,txt:'Recruitment/aptitude test: complete independently. Your result may be used for shortlisting and interview decisions.'},
+    'Certification Exam':{dur:60,limit:'1',release:'true',pass:70,txt:'Certification exam: pass mark and certificate rules apply. A verifiable certificate may be issued after successful completion.'},
+    'STEM Exam':{dur:60,limit:'1',release:'true',pass:50,txt:'STEM exam: use the on-screen Math/Science keyboard and calculator where allowed. Show accurate scientific notation and units.'},
+    'UTME / JAMB Practice':{dur:120,limit:'999',release:'true',pass:50,txt:'UTME/JAMB practice mode: use this for timed practice, speed, accuracy and exam confidence.'},
+    'WAEC / NECO / BECE Practice':{dur:90,limit:'999',release:'true',pass:50,txt:'WAEC/NECO/BECE practice: review explanations after submission and identify weak topics.'},
+    'Practice':{dur:45,limit:'999',release:'true',pass:50,txt:'Practice/revision mode: multiple attempts are allowed for learning and improvement.'}
+  }[type];
+  if(!preset)return;
+  if(dur&&!dur.value)dur.value=preset.dur;
+  if(limit)limit.value=preset.limit;
+  if(release)release.value=preset.release;
+  if(pass)pass.value=preset.pass;
+  if(mode && ['Admission Screening','Common Entrance','Scholarship Test','Recruitment / Aptitude Test','Certification Exam'].includes(type))mode.value='open';
+  if(instructions&&!instructions.value.trim())instructions.value=preset.txt;
+  showToast('✅ Recommended settings applied for '+type+'. You can still edit them.');
 }
 
 // ════════════════════════════════════════════

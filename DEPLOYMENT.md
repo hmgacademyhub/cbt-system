@@ -332,4 +332,7 @@ After uploading this repair package and redeploying to Vercel, hard-refresh the 
 ## CBT v4 deployment note
 
 After deployment, hard-refresh or clear browser site data because the service worker cache name changed. Test install prompt, student navigator hide/show, teacher result/certificate printing and sitemap/PWA files.
+## CBT v5 deployment check
+
+After redeployment, open Teacher Dashboard → Create Exam and confirm the Exam Type dropdown contains Admission Screening, Scholarship Test, Common Entrance, Recruitment / Aptitude Test, Certification Exam, STEM Exam, UTME/JAMB Practice and WAEC/NECO/BECE Practice.
 

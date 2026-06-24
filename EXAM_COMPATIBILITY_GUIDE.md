@@ -69,3 +69,23 @@ HMG Academy CBT Pro is designed to support many school-ecosystem assessment type
 5. After candidates submit, filter by exam in Teacher Results.
 6. Use `Print Listed Results` or `Print Listed Certificates`.
 7. Export CSV for admission office record.
+
+
+## CBT v5 exam-type dropdown
+
+The Teacher Dashboard now includes these explicit exam types:
+
+- Admission Screening
+- Scholarship Test
+- Common Entrance Exam
+- Recruitment / Aptitude Test
+- Certification Exam
+- STEM Exam
+- UTME / JAMB Practice
+- WAEC / NECO / BECE Practice
+- Post-UTME Screening
+- Placement Test
+- Training Assessment
+- IELTS / SAT Practice
+
+Selected types apply recommended defaults automatically. Teachers can still edit duration, attempt limit, release control, pass mark and instructions before publishing.

@@ -49,4 +49,5 @@ The `.git` directory and local system/cache files are excluded from the upload p
 - `pwa_install_enforcer.js` — browser-native install prompt/enforcement helper.
 - `EXAM_COMPATIBILITY_GUIDE.md` — explains exam types and school workflows supported by CBT v4.
 - `CBT_V4_ENTERPRISE_ENHANCEMENT_REPORT.md` — v4 feature audit, deployment and smoke-test guide.
+- `CBT_V5_EXAM_TYPE_AND_ENTERPRISE_REPORT.md` — explains v5 exam-type expansion, presets, similar-platform features and deployment steps.
 

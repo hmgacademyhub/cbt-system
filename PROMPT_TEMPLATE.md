@@ -338,3 +338,19 @@ must appear inside the CSV as:
 ```
 
 This is very important for `matching`, `ordering`, `cloze`, `essay`, `categorization`, `multi_numeric`, `assertion_reason`, `case_study`, `image_mcq`, `matrix`, `hot_text`, and `code`.
+
+---
+
+## CBT v5 exam-type prompt placeholders
+
+When generating a CSV bank, set `[EXAM TYPE]` to one of: Admission Screening, Scholarship Test, Common Entrance Exam, Recruitment / Aptitude Test, Certification Exam, STEM Exam, UTME / JAMB Practice, WAEC / NECO / BECE Practice, Post-UTME Screening, Placement Test, Training Assessment, IELTS / SAT Practice, Class Test, CA, Mid-Term, Terminal Exam, Mock, or Practice.
+
+Add this line to any prompt when useful:
+
+```text
+Exam Type: [EXAM TYPE]
+Assessment Purpose: [admission screening / scholarship selection / common entrance / recruitment shortlisting / certification / STEM mastery / standardised exam practice]
+```
+
+Ask the AI assistant to adapt difficulty, distractors, timing assumptions and explanations to the chosen exam type while still outputting CSV only.
+

@@ -244,4 +244,7 @@ This package fixes a critical `teacher.html` layout nesting bug that prevented A
 ## CBT v4 package
 
 CBT v4 adds PWA install enforcement, student hide/show question navigator, teacher-side result/certificate printing, Q&A packet download, and exam-compatibility documentation for common entrance, external candidates, certification and school ecosystem workflows.
+## CBT v5 exam categories
+
+CBT v5 expands the Exam Type dropdowns for school, admission, scholarship, recruitment, certification, STEM and standardised-practice workflows. Key exam types apply recommended settings automatically, but teachers can edit all settings before publishing.
 

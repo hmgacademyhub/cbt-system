@@ -127,4 +127,10 @@
 - Added teacher-side print result, print certificate, bulk print listed results, bulk print listed certificates and download Q&A packet per student.
 - Added `EXAM_COMPATIBILITY_GUIDE.md` for school ecosystem use cases such as common entrance, admission screening, certification and STEM exams.
 - Added `CBT_V4_ENTERPRISE_ENHANCEMENT_REPORT.md`.
+## CBT v5 — Exam type expansion
+
+- Added Admission Screening, Scholarship Test, Common Entrance, Recruitment/Aptitude Test, Certification Exam, STEM Exam, UTME/JAMB Practice, WAEC/NECO/BECE Practice, Post-UTME Screening, Placement Test, IELTS/SAT Practice and Training Assessment to Teacher Dashboard exam type controls.
+- Added exam-type presets that apply recommended duration, attempt limit, release control, pass mark and instructions for key assessment categories.
+- Updated landing-page exam category pills and documentation.
+- Added `CBT_V5_EXAM_TYPE_AND_ENTERPRISE_REPORT.md`.
 
