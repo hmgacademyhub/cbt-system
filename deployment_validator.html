@@ -75,6 +75,7 @@ async function runChecks(){
  const studentV4=await textOf('student.html');
  const teacherV4=await textOf('teacher.html');
  results.push(row(studentV4.includes('toggleQuestionNavigator')&&studentV4.includes('floating-nav-toggle')?'ok':'warn','Student navigator hide/show','Students can hide/unhide question numbering during exams.'));
+ results.push(row(studentV4.includes('downloadResultHTML')&&studentV4.includes('_cleanResultDocument')&&studentV4.includes('ensureMathKeyboardAlwaysAvailable')?'ok':'warn','v7 student result visibility + STEM keyboard','Student result/question saving uses clean white output and Math/Science keyboard is forced available during active exams.'));
  results.push(row(teacherV4.includes('teacherPrintStudentResult')&&teacherV4.includes('bulkPrintFilteredCertificates')?'ok':'warn','Teacher result/certificate printing','Teacher-side individual and bulk result/certificate printing functions are present.'));
  results.push(row(teacherV4.includes('Admission Screening')&&teacherV4.includes('Common Entrance')&&teacherV4.includes('Recruitment / Aptitude Test')&&teacherV4.includes('Certification Exam')?'ok':'warn','Expanded exam-type coverage','Admission, scholarship, common entrance, recruitment, certification, STEM and standardised practice exam types are present.'));
  const sw=await textOf('sw.js');

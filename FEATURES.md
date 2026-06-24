@@ -313,4 +313,9 @@ The platform now explicitly supports Admission Screening, Scholarship Tests, Com
 - Supabase backend includes SaaS-ready institution and audit-log tables.
 - Optional `institution_id` columns prepare profiles, exams, students and results for multi-tenant school deployments.
 - Fullstack architecture remains free-tier friendly: static frontend + Supabase Auth/Postgres/RLS/RPC backend.
+## CBT v7 student result saving improvements
+
+- Students can export result PDF with clean white-background print styling.
+- Students can download a readable HTML result + question review file.
+- Math/Science keyboard is force-available during every active exam, including old exams.
 

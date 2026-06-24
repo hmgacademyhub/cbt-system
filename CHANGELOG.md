@@ -140,4 +140,12 @@
 - Parsed the full `COMPLETE_SQL_SETUP.sql` successfully after repair.
 - Added SaaS-ready `institutions` and `audit_logs` tables plus tenant columns for profiles, exams, students and results.
 - Added `FULLSTACK_SAAS_ARCHITECTURE.md`.
+## CBT v7 — Student save/print visibility and keyboard reliability
+
+- Fixed student result/question print styles so saved PDFs and printed pages use white backgrounds and readable dark text.
+- Corrected invalid `@media hideprint` to proper print handling.
+- Rebuilt student `exportPDF()` to print from a clean white result document instead of the live dark UI.
+- Added `Save Result + Questions` readable HTML export for students.
+- Added a Math/Science keyboard availability watchdog so the keyboard remains visible during all active exams, including pre-existing exams.
+- Added `CBT_V7_BUG_FIX_AND_VISIBILITY_REPORT.md`.
 

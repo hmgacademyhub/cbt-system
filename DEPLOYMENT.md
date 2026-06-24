@@ -338,4 +338,7 @@ After redeployment, open Teacher Dashboard → Create Exam and confirm the Exam 
 ## CBT v6 SQL deployment warning
 
 If Supabase previously failed at `admin_get_platform_stats()` with a mismatched-parentheses error near `pass_rate`, use the repaired `COMPLETE_SQL_SETUP.sql` in this package and run it from top to bottom. The full SQL has been parsed after the repair.
+## CBT v7 deployment check
+
+After redeployment, test with an already-created exam. Confirm the Math/Science keyboard appears during the exam and that `Export Result PDF` and `Save Result + Questions` produce readable white-background output. Clear PWA cache if old dark print styling remains.
 

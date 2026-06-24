@@ -54,3 +54,5 @@ The `.git` directory and local system/cache files are excluded from the upload p
 
 
 - `CBT_V6_SQL_REPAIR_AND_SAAS_DEPLOYMENT.md` — explains the Supabase pass-rate SQL fix, fullstack/SaaS readiness and v6 deployment steps.
+- `CBT_V7_BUG_FIX_AND_VISIBILITY_REPORT.md` — explains student result/question print visibility fixes and Math/Science keyboard reliability improvements.
+

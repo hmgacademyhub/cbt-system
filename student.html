@@ -373,7 +373,11 @@
         /* ═══ PRINTABLE REPORT CARD ═══ */
         @media print {
             body { background: #fff !important; color: #000 !important; padding: 20px; font-family: sans-serif; }
-            .card { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100%; max-width: 100%; }
+            .card { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100%; max-width: 100%; background:#fff !important; color:#000 !important; }
+            #result-view, #result-view * { color:#000 !important; text-shadow:none !important; }
+            #result-view { background:#fff !important; }
+            #result-view [style*="background:#09090b"], #result-view [style*="background:#111"], #result-view [style*="background:var(--bg)"] { background:#fff !important; }
+            #result-view [style*="color:var(--text-muted)"] { color:#333 !important; }
             #result-card { display: block !important; }
             .no-print, #watermark-container, #network-status { display: none !important; }
             .q-review-box { break-inside: avoid; border: 1px solid #ddd !important; margin-bottom:10px; padding:10px; border-radius:6px; }
@@ -384,7 +388,7 @@
             .cert-code { font-family: monospace; font-size: 16px; border: 2px dashed #000; padding: 10px; margin-top: 20px; text-align: center; font-weight: bold; }
         }
 
-/* Original Print */ @media hideprint {
+/* Clean printable result/question review */ @media print {
             *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
             body{background:#fff!important;color:#000!important;padding:0!important;font-size:12px;}
             .no-print,#calc-btn,#calculator,.action-row,#entry-card,#exam-card,#violation-overlay,#countdown-overlay{display:none!important;}
@@ -917,6 +921,7 @@
         <div id="integrity-summary"></div>
         <div class="action-row no-print">
             <button class="export-btn" onclick="exportPDF()">📄 Export Result PDF</button>
+            <button class="export-btn" onclick="downloadResultHTML()" style="background:rgba(245,158,11,0.15);color:var(--warning);border:1px solid rgba(245,158,11,0.4);">💾 Save Result + Questions</button>
             <button class="export-btn" onclick="window.open('certificate.html?code=' + (document.getElementById('cert-code').innerText), '_blank')" style="background:rgba(59,130,246,0.15);color:var(--info);border:1px solid rgba(59,130,246,0.4);">🎓 Print Certificate</button>
             <button class="export-btn" onclick="shareResult()" style="background:rgba(16,185,129,0.15);color:var(--primary);border:1px solid rgba(16,185,129,0.4);">🔗 Share Result</button>
         </div>
@@ -1003,11 +1008,18 @@ function normalizeAntiCheatConfig(examObj){
         max_violations: Math.max(1,Math.min(20,Number(cfg.max_violations||5)))
     };
 }
+
+function ensureMathKeyboardAlwaysAvailable(){
+    const btn=document.getElementById('math-kbd-btn');
+    if(btn && examActive)btn.classList.remove('hidden');
+}
+setInterval(()=>{try{ensureMathKeyboardAlwaysAvailable();}catch(e){}},2000);
+
 function applyExamIntegritySettings(){
     antiCheatConfig=normalizeAntiCheatConfig(exam);
     MAX_VIOLATIONS=antiCheatConfig.max_violations;
     const kbtn=document.getElementById('math-kbd-btn');
-    if(kbtn)kbtn.classList.toggle('hidden', !examActive);
+    if(kbtn){ if(examActive)kbtn.classList.remove('hidden'); else kbtn.classList.add('hidden'); }
 }
 function isAntiCheatEnabled(name){return antiCheatConfig && antiCheatConfig[name]!==false;}
 
@@ -1518,6 +1530,7 @@ function _beginExam(){
     if(isAntiCheatEnabled('devtools'))startDevToolsTrap();      // devtools size-change detection
     if(isAntiCheatEnabled('audio'))startAudioMonitor();         // optional audio spike monitor
     restoreQuestionNavigatorPreference();
+    ensureMathKeyboardAlwaysAvailable();
     renderWatermark();renderQNav();showQ();
 }
 
@@ -2927,10 +2940,54 @@ async function submitExam(){
 // ═══════════════════════════════════════════
 // PDF EXPORT
 // ═══════════════════════════════════════════
+function _cleanResultCloneHTML(){
+    const node=document.getElementById('result-view');
+    if(!node)return '<p>No result available.</p>';
+    const clone=node.cloneNode(true);
+    clone.querySelectorAll('.no-print,.action-row,#save-indicator,#result-save-error').forEach(el=>el.remove());
+    clone.querySelectorAll('.pdf-header,.pdf-score-block').forEach(el=>el.style.display='block');
+    clone.querySelectorAll('[style]').forEach(el=>{
+        let st=el.getAttribute('style')||'';
+        st=st.replace(/background\s*:\s*#(?:000|09090b|111|18181b)[^;]*;?/gi,'background:#fff;')
+             .replace(/background\s*:\s*var\(--(?:bg|surface|surface-2)\)[^;]*;?/gi,'background:#fff;')
+             .replace(/color\s*:\s*var\(--text-muted\)[^;]*;?/gi,'color:#333;')
+             .replace(/color\s*:\s*#a1a1aa[^;]*;?/gi,'color:#333;')
+             .replace(/color\s*:\s*var\(--text\)[^;]*;?/gi,'color:#000;');
+        el.setAttribute('style',st);
+    });
+    return clone.outerHTML;
+}
+function _cleanResultDocument(title){
+    const html=_cleanResultCloneHTML();
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title><style>
+      body{font-family:Segoe UI,Arial,sans-serif;background:#fff!important;color:#000!important;margin:0;padding:24px;line-height:1.55;}
+      *{box-sizing:border-box;color:#000!important;text-shadow:none!important;}
+      .card,#result-view,.review-card,.result-stats,.integrity-result{background:#fff!important;color:#000!important;box-shadow:none!important;}
+      #result-view{max-width:900px;margin:0 auto;border:0!important;}
+      .review-card{border:1px solid #ccc!important;border-radius:10px!important;padding:14px!important;margin-bottom:10px!important;break-inside:avoid;page-break-inside:avoid;}
+      .review-card.correct{border-left:5px solid #10b981!important}.review-card.wrong{border-left:5px solid #ef4444!important}.review-card.skipped{border-left:5px solid #f59e0b!important}
+      .result-stats{border:1px solid #ddd!important;border-radius:10px!important;padding:12px!important;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+      .pdf-header{display:block!important;text-align:center;margin-bottom:12px}.pdf-score-block{display:block!important;text-align:center;margin:12px 0}.pdf-score-big{font-size:36px;font-weight:900;}
+      .qtype-badge,.r-tag,.grade-badge{border:1px solid #888!important;background:#fff!important;color:#000!important;}
+      button,.no-print,.action-row,#calc-btn,#math-kbd-btn,#calculator,#math-kbd,#watermark-container,#network-status{display:none!important;}
+      @media print{body{padding:12px}.review-card{page-break-inside:avoid}}
+    </style></head><body>${html}</body></html>`;
+}
 function exportPDF(){
-    document.querySelectorAll('.pdf-header,.pdf-score-block').forEach(el=>el.style.display='block');
-    window.print();
-    setTimeout(()=>{document.querySelectorAll('.pdf-header,.pdf-score-block').forEach(el=>el.style.display='none');},1500);
+    const w=window.open('','_blank','width=900,height=700');
+    w.document.write(_cleanResultDocument('HMG CBT Result'));
+    w.document.close();
+    setTimeout(()=>{w.focus();w.print();},350);
+}
+function downloadResultHTML(){
+    const safe=String(finalStudentName||'student').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'student';
+    const doc=_cleanResultDocument('HMG CBT Result and Question Review');
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([doc],{type:'text/html;charset=utf-8'}));
+    a.download=`hmg_cbt_result_questions_${safe}_${Date.now()}.html`;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    showToastStudent('✅ Result and question review saved as a readable HTML file.');
 }
 
 // ═══════════════════════════════════════════

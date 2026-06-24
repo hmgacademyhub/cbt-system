@@ -250,4 +250,7 @@ CBT v5 expands the Exam Type dropdowns for school, admission, scholarship, recru
 ## CBT v6 fullstack/SaaS repair
 
 CBT v6 fixes the Supabase SQL pass-rate syntax error and adds SaaS-ready institution/audit-log database structures. The platform remains a static frontend with Supabase Auth/Postgres/RLS/RPC backend, making it a free-tier-friendly fullstack SaaS-style app. See `FULLSTACK_SAAS_ARCHITECTURE.md`.
+## CBT v7 bug-fix package
+
+CBT v7 fixes dark/black backgrounds when students save or print result/question reviews. It also adds a readable `Save Result + Questions` HTML export and strengthens Math/Science keyboard availability for pre-existing exams.
 
