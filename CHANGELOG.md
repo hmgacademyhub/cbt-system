@@ -120,4 +120,11 @@
 - Added safer dashboard data loading so Supabase/RLS errors do not break page navigation.
 - Fixed undefined `renderQuestionsPreview()` call in reusable question import.
 - Added `vercel.json` headers for Vercel deployment.
+## CBT v4 — Enterprise + install + school-exam workflow update
+
+- Added PWA install enforcer/encourager across main platform pages.
+- Added student control to hide/unhide the question-number navigator during exams.
+- Added teacher-side print result, print certificate, bulk print listed results, bulk print listed certificates and download Q&A packet per student.
+- Added `EXAM_COMPATIBILITY_GUIDE.md` for school ecosystem use cases such as common entrance, admission screening, certification and STEM exams.
+- Added `CBT_V4_ENTERPRISE_ENHANCEMENT_REPORT.md`.
 

@@ -298,4 +298,11 @@ The system supports MCQ, MRQ, True/False, Short Answer, Numeric, Matching, Order
 - `robots.txt` and `sitemap.xml` included for Google, Bing and other search engines.
 - Installable PWA for Android, iPhone/iPad, Windows, macOS and Chromebook.
 - HMG ecosystem lead links point customers to HMG Academy, HMG Concepts, HMG Technologies/project enquiry and WhatsApp.
+## CBT v4 enterprise additions
+
+- Install prompt/strong PWA enforcement for phone, tablet, laptop and desktop users.
+- Student can hide/show the question-number navigator during exams.
+- Teacher can print individual and bulk result slips/certificates.
+- Teacher can download each student’s question-and-answer packet for audit, parent communication, admission screening and records.
+- Compatible with common entrance, admission, scholarship, terminal, mock, certification, recruitment and STEM/coding exams.
 

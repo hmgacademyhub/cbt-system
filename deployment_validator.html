@@ -50,7 +50,7 @@
   </div>
 </div>
 <script>
-const REQUIRED=['index.html','teacher.html','student.html','admin.html','offline.html','sw.js','manifest.webmanifest','hmg-icon.svg','assets/hmg-academy-logo.png','README.md','DEPLOYMENT.md','FEATURES.md','COMPLETE_SQL_SETUP.sql','robots.txt','sitemap.xml','llms.txt'];
+const REQUIRED=['index.html','teacher.html','student.html','admin.html','offline.html','sw.js','manifest.webmanifest','hmg-icon.svg','assets/hmg-academy-logo.png','README.md','DEPLOYMENT.md','FEATURES.md','COMPLETE_SQL_SETUP.sql','robots.txt','sitemap.xml','llms.txt','pwa_install_enforcer.js'];
 let results=[];
 function row(status,title,msg){return{status,title,msg}}
 async function fileExists(path){try{const r=await fetch(path,{cache:'no-store'});return r.ok}catch(e){return false}}
@@ -70,6 +70,12 @@ async function runChecks(){
  results.push(row(robots.includes('Sitemap:')&&robots.includes('Allow: /')?'ok':'warn','Search engine robots.txt',robots?'robots.txt allows crawling and points to sitemap.':'robots.txt missing.'));
  results.push(row(sitemap.includes('<urlset')&&sitemap.includes('/cbtplatform/')?'ok':'warn','XML sitemap',sitemap?'sitemap.xml exists with platform URLs.':'sitemap.xml missing.'));
  results.push(row(index.includes('application/ld+json')&&index.includes('og:title')&&index.includes('canonical')?'ok':'warn','SEO metadata and structured data','Landing page includes canonical, Open Graph and JSON-LD structured data for HMG lead generation.'));
+ const pwaInstall=await textOf('pwa_install_enforcer.js');
+ results.push(row(pwaInstall.includes('beforeinstallprompt')&&pwaInstall.includes('Add to Home Screen')?'ok':'warn','PWA install enforcement helper','Install prompt helper is present for phone/tablet/laptop users.'));
+ const studentV4=await textOf('student.html');
+ const teacherV4=await textOf('teacher.html');
+ results.push(row(studentV4.includes('toggleQuestionNavigator')&&studentV4.includes('floating-nav-toggle')?'ok':'warn','Student navigator hide/show','Students can hide/unhide question numbering during exams.'));
+ results.push(row(teacherV4.includes('teacherPrintStudentResult')&&teacherV4.includes('bulkPrintFilteredCertificates')?'ok':'warn','Teacher result/certificate printing','Teacher-side individual and bulk result/certificate printing functions are present.'));
  const sw=await textOf('sw.js');
  results.push(row(sw.includes('CACHE_NAME')&&sw.includes('offline.html')?'ok':'bad','Service worker',sw?'Service worker file found with offline fallback.':'sw.js missing.'));
  const teacher=await textOf('teacher.html'); const student=await textOf('student.html'); const admin=await textOf('admin.html'); const sql=await textOf('COMPLETE_SQL_SETUP.sql');

@@ -1325,6 +1325,8 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           <div class="flex-gap no-print">
             <button class="btn-sm btn-danger" onclick="clearAllFilteredResults()" style="font-size:12px;">🗑 Delete All Listed</button>
             <button class="btn-sm btn-outline" onclick="exportResults()">⬇ Export CSV</button>
+            <button class="btn-sm btn-outline" onclick="bulkPrintFilteredResults()">🖨 Print Listed Results</button>
+            <button class="btn-sm btn-outline" onclick="bulkPrintFilteredCertificates()">🎓 Print Listed Certificates</button>
             <button class="btn-sm btn-outline" onclick="exportItemAnalysisCSV()">🧩 Item Analysis CSV</button>
             <button class="btn-sm btn-outline" onclick="loadResults().then(()=>showToast('✅ Results refreshed.'))" title="Reload latest results from database" style="font-size:12px;">🔄 Refresh</button>
             <button class="btn-sm btn-ghost" onclick="navigate('analytics')" style="font-size:12px;">📈 Analytics</button>
@@ -4386,7 +4388,7 @@ function printExamAccessSheet(code){
   <h2>Direct Link</h2><div class="link">${link}</div>
   <h2>Student Instructions</h2><ol class="rules"><li>Open the link above OR visit the Student Portal and enter the access code.</li><li>Enter correct name/class or Student ID if registered mode is enabled.</li><li>Accept the integrity pledge before starting.</li><li>Do not leave the exam tab, open developer tools, copy questions, or exit fullscreen.</li><li>Submit before the timer ends.</li></ol>
   <div class="foot">Generated ${new Date().toLocaleString()} · HMG Concepts · Learning Deliberately. Teaching Authentically.</div>
-  </body></html>`);
+</body></html>`);
   w.document.close();
 }
 
@@ -6271,10 +6273,61 @@ function renderResults(data){
       <td style="color:var(--text-muted);font-size:12px;">${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
       <td class="no-print" style="white-space:nowrap;">
         <button class="btn-sm btn-purple" onclick="viewAnswers('${r.id}')" style="margin-right:5px;">👁 View</button>
+        <button class="btn-sm btn-outline" onclick="teacherPrintStudentResult('${r.id}')" style="margin-right:5px;">🖨 Result</button>
+        <button class="btn-sm btn-blue" onclick="teacherPrintCertificate('${r.id}')" style="margin-right:5px;">🎓 Cert</button>
+        <button class="btn-sm btn-outline" onclick="teacherDownloadStudentQuestionPacket('${r.id}')" style="margin-right:5px;">💾 Q&A</button>
         <button class="btn-sm btn-danger" onclick="deleteResult('${r.id}','${r.student_name.replace(/'/g,"\\'")}')">Delete</button>
       </td>
     </tr>`;
   }).join('');
+}
+
+
+function _resultById(id){return allResults.find(r=>String(r.id)===String(id));}
+function _examForResult(r){return allExams.find(e=>e.id===r?.exam_id)||null;}
+function _certCodeForResult(r){return (r?.cert_code||'').trim()||('LOCAL-'+String(r?.id||'').slice(0,8).toUpperCase());}
+function _verificationUrl(code){return window.location.href.replace(/teacher[^/]*\.html.*/i,'certificate.html')+'?code='+encodeURIComponent(code);}
+function _resultRowsHTML(r){
+  const m=decodeMeta(r.exams?.subject||_examForResult(r)?.subject||'');
+  const percent=pct(r.score,r.total);
+  return `<table class="meta"><tr><td>Student</td><td>${escHtml(r.student_name||'')}</td></tr><tr><td>Class</td><td>${escHtml(r.student_class||'')}</td></tr><tr><td>Subject</td><td>${escHtml(m.subject||'')}</td></tr><tr><td>Exam</td><td>${escHtml([m.term,m.type,m.topic].filter(x=>x&&x!=='—').join(' · '))}</td></tr><tr><td>Score</td><td><b>${escHtml(r.score)}/${escHtml(r.total)} (${percent}%)</b></td></tr><tr><td>Correct / Wrong / Skipped</td><td>${r.correct_count??'—'} / ${r.wrong_count??'—'} / ${r.skipped_count??'—'}</td></tr><tr><td>Time Used</td><td>${formatTime(r.time_taken)}</td></tr><tr><td>Integrity Flags</td><td>${Number(r.violations||0)}</td></tr><tr><td>Date</td><td>${new Date(r.created_at||Date.now()).toLocaleString('en-GB')}</td></tr></table>`;
+}
+function _printWindow(title,body){
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escHtml(title)}</title><style>body{font-family:Segoe UI,Arial,sans-serif;color:#111;background:#fff;padding:28px}.sheet{max-width:820px;margin:0 auto 28px;border:1px solid #ddd;border-radius:14px;padding:22px;page-break-after:always}.head{display:flex;gap:14px;align-items:center;border-bottom:3px solid #10b981;padding-bottom:12px;margin-bottom:16px}.logo{width:70px;height:70px;border-radius:14px;object-fit:cover}.brand{font-size:11px;font-weight:900;color:#059669;text-transform:uppercase;letter-spacing:1px}.title{font-size:24px;font-weight:900;margin:3px 0}.meta{width:100%;border-collapse:collapse;margin:14px 0}.meta td{border-bottom:1px solid #eee;padding:8px 6px;font-size:13px}.meta td:first-child{font-weight:800;width:180px;color:#555}.cert-title{text-align:center;font-size:30px;font-weight:900;margin:18px 0 8px}.cert-code{text-align:center;font-family:monospace;font-size:18px;font-weight:900;border:2px dashed #10b981;border-radius:12px;padding:10px;margin:16px 0}.verify{font-size:11px;text-align:center;color:#555;word-break:break-all}.btn{position:fixed;top:12px;right:12px;background:#10b981;color:#000;border:0;border-radius:9px;padding:10px 16px;font-weight:900;cursor:pointer}@media print{.btn{display:none}.sheet{border:0;border-radius:0}}</style></head><body><button class="btn" onclick="window.print()">Print</button>${body}</body></html>`);
+  w.document.close(); setTimeout(()=>w.focus(),200);
+}
+function teacherPrintStudentResult(id){
+  const r=_resultById(id); if(!r)return showToast('Result not found.');
+  const body=`<div class="sheet"><div class="head"><img class="logo" src="assets/hmg-academy-logo.png"><div><div class="brand">HMG Academy CBT Pro · Official Result Slip</div><div class="title">Student Result</div><div>Generated by teacher dashboard · ${new Date().toLocaleString('en-GB')}</div></div></div>${_resultRowsHTML(r)}<p style="font-size:12px;color:#555;line-height:1.7">This printable result is generated from the teacher dashboard for school records, common entrance screening, external candidates, parent communication, or immediate admission processing.</p></div>`;
+  _printWindow('Student Result Slip',body);
+}
+function teacherPrintCertificate(id){
+  const r=_resultById(id); if(!r)return showToast('Result not found.');
+  const m=decodeMeta(r.exams?.subject||_examForResult(r)?.subject||'');
+  const code=_certCodeForResult(r), url=_verificationUrl(code), percent=pct(r.score,r.total);
+  const body=`<div class="sheet"><div class="head"><img class="logo" src="assets/hmg-academy-logo.png"><div><div class="brand">HMG Academy CBT Pro · Certificate</div><div class="title">Certificate of Assessment</div><div>HMG Concepts Ecosystem</div></div></div><div class="cert-title">${percent>=50?'Certificate of Performance':'Assessment Participation Record'}</div><p style="text-align:center;font-size:16px;line-height:1.8">This certifies that <b>${escHtml(r.student_name||'Student')}</b> of <b>${escHtml(r.student_class||'')}</b> completed <b>${escHtml(m.subject||'Assessment')}</b> and scored <b>${escHtml(r.score)}/${escHtml(r.total)} (${percent}%)</b>.</p><div class="cert-code">${escHtml(code)}</div><div class="verify">Verify: ${escHtml(url)}</div><p style="text-align:center;font-size:12px;color:#555;margin-top:24px">Issued ${new Date(r.created_at||Date.now()).toLocaleDateString('en-GB')} · HMG Academy / HMG Concepts</p></div>`;
+  _printWindow('Student Certificate',body);
+}
+function bulkPrintFilteredResults(){
+  const data=getFilteredResults(); if(!data.length)return showToast('No listed results to print.');
+  const body=data.map(r=>`<div class="sheet"><div class="head"><img class="logo" src="assets/hmg-academy-logo.png"><div><div class="brand">HMG Academy CBT Pro · Batch Result Slip</div><div class="title">Student Result</div></div></div>${_resultRowsHTML(r)}</div>`).join('');
+  _printWindow('Batch Student Results',body);
+}
+function bulkPrintFilteredCertificates(){
+  const data=getFilteredResults(); if(!data.length)return showToast('No listed certificates to print.');
+  const body=data.map(r=>{const m=decodeMeta(r.exams?.subject||_examForResult(r)?.subject||'');const code=_certCodeForResult(r),percent=pct(r.score,r.total);return `<div class="sheet"><div class="head"><img class="logo" src="assets/hmg-academy-logo.png"><div><div class="brand">HMG Academy CBT Pro · Batch Certificate</div><div class="title">Certificate of Assessment</div></div></div><div class="cert-title">${percent>=50?'Certificate of Performance':'Assessment Participation Record'}</div><p style="text-align:center;font-size:16px;line-height:1.8">This certifies that <b>${escHtml(r.student_name||'Student')}</b> completed <b>${escHtml(m.subject||'Assessment')}</b> and scored <b>${escHtml(r.score)}/${escHtml(r.total)} (${percent}%)</b>.</p><div class="cert-code">${escHtml(code)}</div><div class="verify">Verify: ${escHtml(_verificationUrl(code))}</div></div>`;}).join('');
+  _printWindow('Batch Student Certificates',body);
+}
+function teacherDownloadStudentQuestionPacket(id){
+  const r=_resultById(id); if(!r)return showToast('Result not found.');
+  const exam=_examForResult(r); const qs=parseQuestionData(exam?.csv_data||[]);
+  let ad=r.answers_data||{}; if(typeof ad==='string'){try{ad=JSON.parse(ad);}catch(e){ad={};}}
+  const m=decodeMeta(r.exams?.subject||exam?.subject||'');
+  const rows=qs.map((q,i)=>{const entry=ad[String(i)]||ad[i]||{};const ans=getAns(entry);return {number:i+1,type:q.type||'mcq',question:q.q||'',student_answer:ans,correct_answer:q.ans||'',explanation:q.exp||'',time_sec:getTimeSec(entry),flagged:isFlagged(entry)};});
+  const packet={package_type:'HMG_CBT_STUDENT_QA_PACKET',exported_at:new Date().toISOString(),student:{name:r.student_name,class:r.student_class,id:r.student_id_ref||''},exam:m,score:{score:r.score,total:r.total,percentage:pct(r.score,r.total)},questions:rows};
+  _downloadTextFile('hmg_cbt_'+String(r.student_name||'student').toLowerCase().replace(/[^a-z0-9]+/g,'_')+'_qa_packet.json',JSON.stringify(packet,null,2),'application/json');
+  showToast('✅ Student question/answer packet downloaded.');
 }
 
 // ════════════════════════════════════════════
@@ -7006,5 +7059,6 @@ if('serviceWorker' in navigator && location.protocol !== 'file:'){
 }
 
 </script>
+<script src="pwa_install_enforcer.js"></script>
 </body>
 </html>

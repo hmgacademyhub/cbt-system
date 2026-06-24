@@ -241,4 +241,7 @@ The platform includes `robots.txt`, `sitemap.xml`, `llms.txt`, improved PWA mani
 ## Repair release note
 
 This package fixes a critical `teacher.html` layout nesting bug that prevented Assessments, Results, Analytics, Settings and Students pages from appearing after sidebar clicks. See `CBT_REPAIR_AUDIT_REPORT.md`.
+## CBT v4 package
+
+CBT v4 adds PWA install enforcement, student hide/show question navigator, teacher-side result/certificate printing, Q&A packet download, and exam-compatibility documentation for common entrance, external candidates, certification and school ecosystem workflows.
 

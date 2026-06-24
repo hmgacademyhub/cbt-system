@@ -46,4 +46,7 @@ The `.git` directory and local system/cache files are excluded from the upload p
 - `llms.txt` — AI/search assistant summary of HMG Academy CBT Pro and HMG Concepts ecosystem.
 - `browserconfig.xml` — Windows/PWA tile metadata.
 - `SEO_PWA_LEAD_GENERATION.md` — SEO, installability and lead-generation guide.
+- `pwa_install_enforcer.js` — browser-native install prompt/enforcement helper.
+- `EXAM_COMPATIBILITY_GUIDE.md` — explains exam types and school workflows supported by CBT v4.
+- `CBT_V4_ENTERPRISE_ENHANCEMENT_REPORT.md` — v4 feature audit, deployment and smoke-test guide.
 

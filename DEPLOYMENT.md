@@ -329,4 +329,7 @@ After deployment, verify `/robots.txt`, `/sitemap.xml`, `/manifest.webmanifest`,
 ## Repair deployment note
 
 After uploading this repair package and redeploying to Vercel, hard-refresh the browser or clear site data so the old service worker/browser cache does not keep the broken `teacher.html`. Then test all Teacher Dashboard sidebar menus.
+## CBT v4 deployment note
+
+After deployment, hard-refresh or clear browser site data because the service worker cache name changed. Test install prompt, student navigator hide/show, teacher result/certificate printing and sitemap/PWA files.
 

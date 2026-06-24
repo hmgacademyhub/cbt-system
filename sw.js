@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v8-seo-pwa';
+const CACHE_NAME = 'hmg-cbt-shell-v9-enterprise-v4';
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
@@ -26,7 +26,8 @@ const SHELL_ASSETS = [
   './robots.txt',
   './sitemap.xml',
   './browserconfig.xml',
-  './llms.txt'
+  './llms.txt',
+  './pwa_install_enforcer.js'
 ];
 
 // Install event: cache the app shell
