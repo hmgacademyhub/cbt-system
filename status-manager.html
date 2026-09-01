@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roles & Status Manager • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Roles, Permissions & Approvals</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>👥 Roles & User Status Manager</h1>
+      <p>Manage platform roles (Super Admin, Admin, Teacher, Student) and approve teacher registration requests.</p>
+    </div>
+    <button class="btn btn-primary" onclick="loadProfiles()">🔄 Refresh Profiles</button>
+  </div>
+
+  <div class="card">
+    <h2>📋 User Accounts & Access Queue</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="profiles-body">
+          <tr><td colspan="5" style="text-align:center;">Loading user accounts...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script>
+async function loadProfiles() {
+  const tbody = document.getElementById('profiles-body');
+  try {
+    const list = await App.sbRpc('admin_get_all_profiles');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No user accounts found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(p => `
+      <tr>
+        <td><strong>${escapeHtml(p.full_name || '—')}</strong></td>
+        <td>${escapeHtml(p.email)}</td>
+        <td><span class="badge ${p.role === 'super_admin' || p.role === 'admin' ? 'badge-accent' : 'badge-info'}">${p.role}</span></td>
+        <td><span class="badge ${p.status === 'active' ? 'badge-primary' : 'badge-warning'}">${p.status}</span></td>
+        <td>
+          <div class="flex-gap">
+            ${p.status === 'pending' ? `<button class="btn btn-sm btn-primary" onclick="updateStatus('${p.id}', 'active')">Approve</button>` : ''}
+            ${p.status === 'active' ? `<button class="btn btn-sm btn-warning" onclick="updateStatus('${p.id}', 'inactive')">Deactivate</button>` : `<button class="btn btn-sm btn-primary" onclick="updateStatus('${p.id}', 'active')">Activate</button>`}
+            <button class="btn btn-sm btn-outline" onclick="changeRole('${p.id}', '${p.role}')">Change Role</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);">Error: ${e.message}</td></tr>`;
+  }
+}
+
+async function updateStatus(id, status) {
+  try {
+    await App.sbRpc('admin_set_profile_status', { p_id: id, p_status: status });
+    showToast(`User marked ${status}`, 'success');
+    loadProfiles();
+  } catch (e) {
+    showToast(e.message, 'danger');
+  }
+}
+
+async function changeRole(id, currentRole) {
+  const role = prompt('Enter new role (super_admin, admin, teacher, student):', currentRole);
+  if (!role || role === currentRole) return;
+  try {
+    await App.sbRpc('admin_set_profile_role', { p_id: id, p_role: role, p_status: 'active' });
+    showToast(`Role updated to ${role}`, 'success');
+    loadProfiles();
+  } catch (e) {
+    showToast(e.message, 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadProfiles);
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whitelabel CBT System Generator • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;600;800&family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&family=Syne:wght@700;800&family=Fira+Code:wght@400;600&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Whitelabel System Generator</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>⚙️ Whitelabel CBT System Generator</h1>
+      <p>Select from <strong>50+ Professional Themes</strong>, <strong>50+ Typography Fonts</strong>, and <strong>20+ Layouts</strong> to build and package your school's customized CBT platform with pre-configured Supabase keys.</p>
+    </div>
+    <button class="btn btn-primary" onclick="generateCustomCBTZip()">📦 Download Customized CBT System (.ZIP)</button>
+  </div>
+
+  <div class="grid-2">
+    <!-- Configuration Panel -->
+    <div class="card">
+      <h2>🎨 Whitelabel Branding & Customization</h2>
+      
+      <label>School / Institution Name</label>
+      <input type="text" id="gen-name" value="God of Seed Academy CBT" oninput="updatePreview()">
+
+      <label>Platform Tagline / Slogan</label>
+      <input type="text" id="gen-tagline" value="Excellence in Computer-Based Testing & STEM Practice" oninput="updatePreview()">
+
+      <!-- Theme Selector (50+ Themes) -->
+      <label>Theme Preset (50+ Curated Palettes)</label>
+      <select id="gen-theme-select" onchange="onThemeSelectChange()"></select>
+
+      <div class="grid-2">
+        <div>
+          <label>Primary Brand Color</label>
+          <input type="color" id="gen-color-primary" value="#10b981" oninput="updatePreview()" style="height:45px;padding:4px;cursor:pointer;">
+        </div>
+        <div>
+          <label>Accent Brand Color</label>
+          <input type="color" id="gen-color-accent" value="#8b5cf6" oninput="updatePreview()" style="height:45px;padding:4px;cursor:pointer;">
+        </div>
+      </div>
+
+      <!-- Typography Font Selector (50+ Fonts) -->
+      <label>Typography & Font Stack (50+ Options)</label>
+      <select id="gen-font-select" onchange="onFontSelectChange()"></select>
+
+      <!-- Layout Selector (20+ Layouts) -->
+      <label>Interface Layout Style (20+ Layouts)</label>
+      <select id="gen-layout-select" onchange="updatePreview()"></select>
+
+      <h2 style="margin-top:20px;">🔌 Supabase Backend Injection</h2>
+      <label>Supabase Project URL</label>
+      <input type="text" id="gen-sb-url" value="https://pstnsaqjshmtintjrnas.supabase.co">
+
+      <label>Supabase Public Anon Key</label>
+      <input type="text" id="gen-sb-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzdG5zYXFqc2htdGludGpybmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MDEzODUsImV4cCI6MjA5MTI3NzM4NX0.KNVgpVN0xp1njin1HL3udntc7psfzjnz7mqzpEN_Z6w">
+    </div>
+
+    <!-- Live Preview Canvas -->
+    <div class="card">
+      <h2>👁️ Live Whitelabel Preview</h2>
+      <div id="preview-panel" style="border:1px solid var(--border);border-radius:var(--radius);padding:24px;background:var(--surface-2);text-align:center;box-shadow:var(--shadow);">
+        <div style="font-size:40px;margin-bottom:8px;">🎓</div>
+        <h2 id="prev-name" style="margin-bottom:4px;">God of Seed Academy CBT</h2>
+        <p id="prev-tagline" style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Excellence in Computer-Based Testing & STEM Practice</p>
+        
+        <div class="flex-gap" style="justify-content:center;margin-bottom:20px;">
+          <span class="badge" id="prev-badge-primary" style="background:#10b981;color:#000;">Primary Action</span>
+          <span class="badge" id="prev-badge-accent" style="background:#8b5cf6;color:#fff;">Secondary Accent</span>
+          <span class="badge badge-info" id="prev-badge-layout">Classic Sidebar</span>
+        </div>
+
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:left;font-size:12px;line-height:1.7;">
+          <strong style="color:var(--primary);">Included in Generated Standalone ZIP:</strong><br>
+          • 100% Zero-Build HTML5/JS/CSS Static Files<br>
+          • Injected Complete Schema SQL (<code>COMPLETE_SCHEMA_SQL.sql</code>)<br>
+          • Multi-Subject UTME / JAMB / WAEC Exam Engine<br>
+          • 10-Layer Supabase Free-Tier Anti-Pause Matrix<br>
+          • Google Drive Automated Cloud Sync (<code>drive.file</code>)<br>
+          • 37+ Question Type Renders & AI Prompt Studio<br>
+          • Disaster Recovery Migration Tool (New Supabase Re-import)
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/generator.js"></script>
+<script>
+function populateDropdowns() {
+  const tSel = document.getElementById('gen-theme-select');
+  tSel.innerHTML = CBTGenerator.THEMES.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+
+  const fSel = document.getElementById('gen-font-select');
+  fSel.innerHTML = CBTGenerator.FONTS.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+
+  const lSel = document.getElementById('gen-layout-select');
+  lSel.innerHTML = CBTGenerator.LAYOUTS.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+}
+
+function onThemeSelectChange() {
+  const tid = document.getElementById('gen-theme-select').value;
+  const theme = CBTGenerator.THEMES.find(t => t.id === tid);
+  if (theme) {
+    document.getElementById('gen-color-primary').value = theme.primary;
+    document.getElementById('gen-color-accent').value = theme.accent;
+    updatePreview();
+  }
+}
+
+function onFontSelectChange() {
+  const fid = document.getElementById('gen-font-select').value;
+  const font = CBTGenerator.FONTS.find(f => f.id === fid);
+  if (font) {
+    document.getElementById('preview-panel').style.fontFamily = font.family;
+  }
+}
+
+function updatePreview() {
+  const name = document.getElementById('gen-name').value.trim() || 'Custom CBT Pro';
+  const tagline = document.getElementById('gen-tagline').value.trim() || 'Computer-Based Testing System';
+  const pCol = document.getElementById('gen-color-primary').value;
+  const aCol = document.getElementById('gen-color-accent').value;
+  const lid = document.getElementById('gen-layout-select').value;
+  const layout = CBTGenerator.LAYOUTS.find(l => l.id === lid);
+
+  document.getElementById('prev-name').innerText = name;
+  document.getElementById('prev-tagline').innerText = tagline;
+  document.getElementById('prev-badge-primary').style.background = pCol;
+  document.getElementById('prev-badge-accent').style.background = aCol;
+  document.getElementById('prev-badge-layout').innerText = layout ? layout.name.split(' ')[0] : 'Standard';
+}
+
+async function generateCustomCBTZip() {
+  try {
+    showToast('Compiling customized standalone CBT package in browser...', 'info');
+    const cfg = {
+      institutionName: document.getElementById('gen-name').value.trim(),
+      tagline: document.getElementById('gen-tagline').value.trim(),
+      themeId: document.getElementById('gen-theme-select').value,
+      fontId: document.getElementById('gen-font-select').value,
+      layoutId: document.getElementById('gen-layout-select').value,
+      primaryColor: document.getElementById('gen-color-primary').value,
+      accentColor: document.getElementById('gen-color-accent').value,
+      supabaseUrl: document.getElementById('gen-sb-url').value.trim(),
+      supabaseAnonKey: document.getElementById('gen-sb-key').value.trim()
+    };
+
+    const res = await CBTGenerator.generatePackage(cfg);
+    showToast(`✅ Generated ${res.filename} (${(res.sizeBytes / 1024 / 1024).toFixed(2)} MB)!`, 'success');
+  } catch (e) {
+    showToast('Packaging error: ' + e.message, 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  populateDropdowns();
+  updatePreview();
+});
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

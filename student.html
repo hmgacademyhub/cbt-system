@@ -418,6 +418,11 @@
         #tts-btn:hover{background:rgba(59,130,246,0.2);border-color:var(--info);}
         #tts-btn.speaking{background:var(--info);color:#fff;animation:pulse-border 1.5s infinite;}
     </style>
+<script src="assets/js/cbt-types.js"></script>
+<script src="assets/js/cbt-richtext.js"></script>
+<script src="assets/js/cbt-exam-kit.js"></script>
+<script src="assets/js/site-help.js"></script>
+<script src="assets/js/chatbot.js"></script>
 </head>
 <body>
 <div id="watermark-container"></div>
@@ -817,6 +822,9 @@
           <div id="timer">00:00</div>
         </div>
     </div>
+    <!-- Multi-Subject Tab Bar -->
+    <div id="multi-subject-tab-bar" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);"></div>
+
     <!-- Student identity strip during exam -->
     <div id="student-id-strip" style="display:none;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:8px 14px;margin-bottom:16px;font-size:12px;align-items:center;gap:8px;">
         <span style="color:var(--primary);">✅ Verified:</span>
@@ -1268,6 +1276,45 @@ function init_admission(){
     document.getElementById('exam-banner').classList.remove('hidden');
     document.title='HMG Academy CBT | '+m.subject;
 
+    isMultiSubjectMode = !!(exam.is_multi_subject || (exam.subjects_data && Array.isArray(exam.subjects_data) && exam.subjects_data.length > 0));
+
+    if(isMultiSubjectMode){
+        multiSubjectsList = (exam.subjects_data || []).map((s, sIdx) => {
+            let qs = s.questions || [];
+            if(!qs.length && s.csv_data){
+                qs = typeof s.csv_data === 'string' ? JSON.parse(s.csv_data) : s.csv_data;
+            }
+            if(!Array.isArray(qs)) qs = [];
+            qs.forEach((q, i) => {
+                q._orig = i;
+                q._subjIdx = sIdx;
+                if(!q.type) q.type = 'mcq';
+                const qt = q.type.toLowerCase();
+                if(qt==='mcq'||qt==='tf'){
+                    q.ans = (q.ans||'').replace(/^\uFEFF/,'').replace(/^[\"\'\s]+|[\"\'\s]+$/g,'').toUpperCase();
+                    if(!['A','B','C','D'].includes(q.ans)) q.ans='';
+                }
+            });
+            if(s.count && Number(s.count) > 0 && Number(s.count) < qs.length){
+                qs = qs.sort(() => Math.random() - 0.5).slice(0, Number(s.count));
+            }
+            return {
+                name: s.subject_name || s.name || `Subject ${sIdx + 1}`,
+                passmark: s.passmark || 50,
+                questions: qs
+            };
+        });
+
+        activeSubjectIdx = 0;
+        questions = multiSubjectsList[0]?.questions || [];
+        const totalQCount = multiSubjectsList.reduce((acc, cur) => acc + cur.questions.length, 0);
+
+        studentMode = exam.exam_mode || 'open';
+        renderEntryForm();
+        showStatusMsg(`Combined Multi-Subject Exam (${multiSubjectsList.length} Subjects · ${totalQCount} Total Questions) · ${exam.duration} mins`,'info');
+        return;
+    }
+
     let rawQuestions=parseQuestionData(exam.csv_data);
     if(!Array.isArray(rawQuestions)||rawQuestions.length===0){
         showStatusMsg('This exam has no questions yet. Please contact your teacher.');
@@ -1478,6 +1525,38 @@ function _launchCountdown(){
     },1000);
 }
 
+
+function renderMultiSubjectTabs(){
+    const bar = document.getElementById('multi-subject-tab-bar');
+    if(!bar) return;
+    if(!isMultiSubjectMode || !multiSubjectsList.length){
+        bar.style.display = 'none';
+        return;
+    }
+    bar.style.display = 'flex';
+    bar.innerHTML = multiSubjectsList.map((s, idx) => {
+        let answeredInSubj = 0;
+        s.questions.forEach(q => {
+            if(answers[`${idx}_${q._orig}`] !== undefined && answers[`${idx}_${q._orig}`] !== null && answers[`${idx}_${q._orig}`] !== '') answeredInSubj++;
+        });
+        const isAct = idx === activeSubjectIdx;
+        return `<button type="button" class="btn-sm ${isAct ? 'btn-primary' : 'btn-outline'}" onclick="switchStudentExamSubject(${idx})" style="padding:7px 14px;border-radius:20px;font-weight:700;font-size:12px;">
+          ${escapeHtmlStudent(s.name)} (${answeredInSubj}/${s.questions.length})
+        </button>`;
+    }).join('');
+}
+
+function switchStudentExamSubject(idx){
+    if(idx < 0 || idx >= multiSubjectsList.length) return;
+    if(prevQuestionRecordTime) prevQuestionRecordTime();
+    activeSubjectIdx = idx;
+    questions = multiSubjectsList[activeSubjectIdx].questions;
+    current = 0;
+    renderMultiSubjectTabs();
+    renderQNav();
+    showQ();
+}
+
 function _beginExam(){
     examActive=true;
     questionStartTime=Date.now();
@@ -1620,8 +1699,8 @@ function handleKeydown(e){
         const origKey=q._orig;
         const qtype=getQType(q);
         if(['A','B','C','D'].includes(key)){
-            if(qtype==='mcq' && q[key.toLowerCase()]){answers[origKey]=key;showQ();renderQNav();e.preventDefault();return;}
-            if(qtype==='tf' && ['A','B'].includes(key)){answers[origKey]=key;showQ();renderQNav();e.preventDefault();return;}
+            if(qtype==='mcq' && q[key.toLowerCase()]){answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=key;showQ();renderQNav();e.preventDefault();return;}
+            if(qtype==='tf' && ['A','B'].includes(key)){answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=key;showQ();renderQNav();e.preventDefault();return;}
             if(qtype==='mrq' && q[key.toLowerCase()]){
                 const sel=mrqGetSelected(origKey);
                 if(sel.has(key))sel.delete(key);else sel.add(key);
@@ -1697,11 +1776,11 @@ function qTypeLabel(t){
 function qTypeCls(t){return{mcq:'qtype-mcq',mrq:'qtype-mrq',tf:'qtype-tf',short:'qtype-short',numeric:'qtype-numeric',matching:'qtype-matching',ordering:'qtype-ordering',cloze:'qtype-cloze',essay:'qtype-essay',categorization:'qtype-categorization',multi_numeric:'qtype-multi_numeric',assertion_reason:'qtype-mrq',case_study:'qtype-essay',image_mcq:'qtype-mcq',matrix:'qtype-categorization',hot_text:'qtype-short',code:'qtype-essay'}[t]||'qtype-mcq';}
 
 // For MRQ: answers stored as sorted comma string e.g. "A,B,C"
-function mrqGetSelected(origKey){ const v=answers[origKey]; if(!v)return new Set(); return new Set(v.split(',').filter(Boolean)); }
-function mrqSetSelected(origKey,set){ const sorted=[...set].sort().join(','); answers[origKey]=sorted||null; }
+function mrqGetSelected(origKey){ const v=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]; if(!v)return new Set(); return new Set(v.split(',').filter(Boolean)); }
+function mrqSetSelected(origKey,set){ const sorted=[...set].sort().join(','); answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=sorted||null; }
 
 // Check if a question has an answer (used for nav colour)
-function hasAnswer(origKey){ const v=answers[origKey]; return v!=null&&v!==''&&v!==undefined; }
+function hasAnswer(origKey){ const v=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]; return v!=null&&v!==''&&v!==undefined; }
 
 function showQ(prevIndex){
     if(window.speechSynthesis && window.speechSynthesis.speaking) {
@@ -1779,9 +1858,9 @@ function _renderMCQ(q, origKey, box){
     ['A','B','C','D'].forEach(l=>{
         const v=q[l.toLowerCase()];if(!v)return;
         const d=document.createElement('div');
-        d.className='opt'+(answers[origKey]===l?' selected':'');
+        d.className='opt'+(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]===l?' selected':'');
         d.innerHTML=`<strong>${l}.</strong> ${escapeHtmlStudent(v)}`;
-        d.onclick=()=>{ answers[origKey]=l; showQ(); renderQNav(); };
+        d.onclick=()=>{ answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=l; showQ(); renderQNav(); };
         box.appendChild(d);
     });
 }
@@ -1811,7 +1890,7 @@ function _renderMRQ(q, origKey, box){
 function _renderTF(q, origKey, box){
     const grid=document.createElement('div');
     grid.className='tf-grid';
-    const current_ans=answers[origKey];
+    const current_ans=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey];
     // True/False: answer is stored as 'A' for True, 'B' for False
     // q.a = "True", q.b = "False" (set by teacher or defaults)
     const trueText=q.a||'True';
@@ -1819,12 +1898,12 @@ function _renderTF(q, origKey, box){
     const tDiv=document.createElement('div');
     tDiv.className='tf-opt'+(current_ans==='A'?' selected-true':'');
     tDiv.innerHTML=`<span class="tf-icon">✅</span>${escapeHtmlStudent(trueText)}`;
-    tDiv.onclick=()=>{ answers[origKey]='A'; showQ(); renderQNav(); };
+    tDiv.onclick=()=>{ answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]='A'; showQ(); renderQNav(); };
 
     const fDiv=document.createElement('div');
     fDiv.className='tf-opt'+(current_ans==='B'?' selected-false':'');
     fDiv.innerHTML=`<span class="tf-icon">❌</span>${escapeHtmlStudent(falseText)}`;
-    fDiv.onclick=()=>{ answers[origKey]='B'; showQ(); renderQNav(); };
+    fDiv.onclick=()=>{ answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]='B'; showQ(); renderQNav(); };
 
     grid.appendChild(tDiv); grid.appendChild(fDiv);
     box.appendChild(grid);
@@ -1833,7 +1912,7 @@ function _renderTF(q, origKey, box){
 function _renderShort(q, origKey, box){
     const wrap=document.createElement('div');
     wrap.className='short-answer-wrap';
-    const stored=answers[origKey]||'';
+    const stored=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]||'';
     const maxLen=q.maxlen||200;
     wrap.innerHTML=`
       <input type="text" class="short-answer-input" id="short-input-${origKey}"
@@ -1848,7 +1927,7 @@ function _renderShort(q, origKey, box){
         if(!inp)return;
         const cc=document.getElementById('short-cc-'+origKey);
         inp.addEventListener('input',()=>{
-            answers[origKey]=inp.value||null;
+            answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=inp.value||null;
             if(cc)cc.innerText=`${inp.value.length}/${maxLen}`;
             renderQNav();
         });
@@ -1860,7 +1939,7 @@ function _renderShort(q, origKey, box){
 function _renderNumeric(q, origKey, box){
     const wrap=document.createElement('div');
     wrap.className='numeric-wrap';
-    const stored=answers[origKey]||'';
+    const stored=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]||'';
     const tol=q.tolerance!=null?q.tolerance:0;
     const unit=q.unit||'';
     wrap.innerHTML=`
@@ -1875,7 +1954,7 @@ function _renderNumeric(q, origKey, box){
         const inp=document.getElementById('num-input-'+origKey);
         if(!inp)return;
         inp.addEventListener('input',()=>{
-            answers[origKey]=inp.value!==''?inp.value:null;
+            answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=inp.value!==''?inp.value:null;
             renderQNav();
         });
         inp.addEventListener('keydown',e=>e.stopPropagation());
@@ -1909,7 +1988,7 @@ function _renderMatching(q, origKey, box){
 
     // Parse current answer
     let currentAns={};
-    try{ if(answers[origKey])currentAns=JSON.parse(answers[origKey]); }catch(e){}
+    try{ if(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey])currentAns=JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]); }catch(e){}
 
     const hint=document.createElement('div');
     hint.className='match-hint';
@@ -1948,7 +2027,7 @@ function _renderMatching(q, origKey, box){
                 const s=document.getElementById(`match-sel-${origKey}-${li}`);
                 if(s&&s.value!=='')ans[String(li)]=s.value;
             });
-            answers[origKey]=Object.keys(ans).length?JSON.stringify(ans):null;
+            answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=Object.keys(ans).length?JSON.stringify(ans):null;
             renderQNav();
         });
         sel.addEventListener('keydown',e=>e.stopPropagation());
@@ -1974,7 +2053,7 @@ function _renderOrdering(q, origKey, box){
     // On first render, start with the scrambled order (0,1,2...)
     let currentOrder;
     try{
-        if(answers[origKey])currentOrder=JSON.parse(answers[origKey]);
+        if(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey])currentOrder=JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]);
         else currentOrder=items.map((_,i)=>i);
     }catch(e){currentOrder=items.map((_,i)=>i);}
 
@@ -1983,7 +2062,7 @@ function _renderOrdering(q, origKey, box){
         const list=document.getElementById(`order-list-${origKey}`);
         if(!list)return;
         const newOrder=[...list.querySelectorAll('.order-item')].map(el=>parseInt(el.dataset.idx));
-        answers[origKey]=JSON.stringify(newOrder);
+        answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=JSON.stringify(newOrder);
         renderQNav();
         // Refresh position numbers
         list.querySelectorAll('.order-num').forEach((el,i)=>el.innerText=i+1);
@@ -2052,7 +2131,7 @@ function orderMoveItem(btn,dir,origKey){
 function _renderCloze(q, origKey, box){
     const answersList=Array.isArray(q.items)?q.items:[];
     const count=answersList.length || ((q.q.match(/___/g)||[]).length) || 1;
-    let current=[]; try{current=answers[origKey]?JSON.parse(answers[origKey]):[];}catch(e){current=[];}
+    let current=[]; try{current=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):[];}catch(e){current=[];}
     const hint=document.createElement('div');
     hint.className='short-answer-hint';
     hint.innerHTML='<strong>Fill every blank.</strong> Alternatives may be accepted where your teacher configured them.';
@@ -2069,7 +2148,7 @@ function _renderCloze(q, origKey, box){
             const inp=document.getElementById(`cloze-${origKey}-${i}`); if(!inp)continue;
             inp.addEventListener('input',()=>{
                 const arr=[]; for(let j=0;j<count;j++){arr[j]=document.getElementById(`cloze-${origKey}-${j}`)?.value||'';}
-                answers[origKey]=arr.some(v=>v.trim())?JSON.stringify(arr):null; renderQNav();
+                answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=arr.some(v=>v.trim())?JSON.stringify(arr):null; renderQNav();
             });
             inp.addEventListener('keydown',e=>e.stopPropagation());
         }
@@ -2083,13 +2162,13 @@ function _renderEssay(q, origKey, box){
     let rubric={}; try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){rubric={};}
     const minWords=Number(rubric.min_words||q.min_words||30);
     const keywords=Array.isArray(rubric.keywords)?rubric.keywords:(q.accept||'').split('|').filter(Boolean);
-    const val=answers[origKey]||'';
+    const val=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]||'';
     const wrap=document.createElement('div');
     wrap.innerHTML=`<textarea class="essay-textarea" id="essay-${origKey}" placeholder="Write your response here. Aim for at least ${minWords} words.">${escapeHtmlStudent(val)}</textarea><div class="short-answer-hint" id="essay-hint-${origKey}">No AI marking is used. This question is scored by configured keywords/minimum word count. ${keywords.length?'Keywords expected: '+keywords.length:'Teacher may review manually.'}</div>`;
     box.appendChild(wrap);
     requestAnimationFrame(()=>{
         const ta=document.getElementById(`essay-${origKey}`); if(!ta)return;
-        ta.addEventListener('input',()=>{answers[origKey]=ta.value.trim()?ta.value:null;renderQNav();});
+        ta.addEventListener('input',()=>{answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=ta.value.trim()?ta.value:null;renderQNav();});
         ta.addEventListener('keydown',e=>e.stopPropagation());
     });
 }
@@ -2099,7 +2178,7 @@ function _renderEssay(q, origKey, box){
 function _renderCategorization(q, origKey, box){
     const rows=Array.isArray(q.items)?q.items:[];
     if(!rows.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No categorization items defined.</p>';return;}
-    let cur={};try{cur=answers[origKey]?JSON.parse(answers[origKey]):{};}catch(e){cur={};}
+    let cur={};try{cur=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):{};}catch(e){cur={};}
     const categories=[...new Set(rows.map(r=>r.category).filter(Boolean))].sort();
     const hint=document.createElement('div');hint.className='match-hint';hint.innerHTML='<strong>Choose the correct category</strong> for each item.';box.appendChild(hint);
     const table=document.createElement('table');table.className='cat-table';
@@ -2111,7 +2190,7 @@ function _renderCategorization(q, origKey, box){
     box.appendChild(table);
     requestAnimationFrame(()=>rows.forEach((_,i)=>{
         const sel=document.getElementById(`cat-${origKey}-${i}`); if(!sel)return;
-        sel.addEventListener('change',()=>{const ans={};rows.forEach((_,j)=>{const v=document.getElementById(`cat-${origKey}-${j}`)?.value||'';if(v)ans[j]=v;});answers[origKey]=Object.keys(ans).length?JSON.stringify(ans):null;renderQNav();});
+        sel.addEventListener('change',()=>{const ans={};rows.forEach((_,j)=>{const v=document.getElementById(`cat-${origKey}-${j}`)?.value||'';if(v)ans[j]=v;});answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=Object.keys(ans).length?JSON.stringify(ans):null;renderQNav();});
         sel.addEventListener('keydown',e=>e.stopPropagation());
     }));
 }
@@ -2121,7 +2200,7 @@ function _renderCategorization(q, origKey, box){
 function _renderMultiNumeric(q, origKey, box){
     const parts=Array.isArray(q.items)?q.items:[];
     if(!parts.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No numeric parts defined.</p>';return;}
-    let cur=[];try{cur=answers[origKey]?JSON.parse(answers[origKey]):[];}catch(e){cur=[];}
+    let cur=[];try{cur=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):[];}catch(e){cur=[];}
     const hint=document.createElement('div');hint.className='numeric-hint';hint.innerHTML='<strong>Multi-part numeric:</strong> answer each part. Partial credit is awarded per correct part.';box.appendChild(hint);
     const grid=document.createElement('div');grid.className='multi-num-grid';
     parts.forEach((part,i)=>{
@@ -2132,7 +2211,7 @@ function _renderMultiNumeric(q, origKey, box){
     box.appendChild(grid);
     requestAnimationFrame(()=>parts.forEach((_,i)=>{
         const inp=document.getElementById(`mn-${origKey}-${i}`); if(!inp)return;
-        inp.addEventListener('input',()=>{const arr=[];parts.forEach((_,j)=>arr[j]=document.getElementById(`mn-${origKey}-${j}`)?.value||'');answers[origKey]=arr.some(v=>v!=='')?JSON.stringify(arr):null;renderQNav();});
+        inp.addEventListener('input',()=>{const arr=[];parts.forEach((_,j)=>arr[j]=document.getElementById(`mn-${origKey}-${j}`)?.value||'');answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=arr.some(v=>v!=='')?JSON.stringify(arr):null;renderQNav();});
         inp.addEventListener('keydown',e=>e.stopPropagation());
     }));
 }
@@ -2140,13 +2219,13 @@ function _renderMultiNumeric(q, origKey, box){
 
 function _safeItems(q){ if(Array.isArray(q.items))return q.items; if(typeof q.items==='string'){try{return JSON.parse(q.items);}catch(e){return [];}} return []; }
 function _getOptionList(q, fallbackLetters='ABCD'){ const items=_safeItems(q); if(items.length&&typeof items[0]==='object'&&items[0].label)return items.map(o=>({letter:String(o.label).toUpperCase(),text:o.text||o.value||''})); if(items.length&&typeof items[0]==='string')return items.map((txt,i)=>({letter:String.fromCharCode(65+i),text:txt})); return fallbackLetters.split('').filter(l=>q[l.toLowerCase()]).map(l=>({letter:l,text:q[l.toLowerCase()]})); }
-function _renderChoiceList(q, origKey, box, letters='ABCD'){ const opts=_getOptionList(q,letters); const grid=document.createElement('div');grid.className='options-grid'; opts.forEach(o=>{const div=document.createElement('div');div.className='option-card'+(answers[origKey]===o.letter?' selected':'');div.innerHTML=`<span class="opt-letter">${escapeHtmlStudent(o.letter)}</span><span>${escapeHtmlStudent(o.text)}</span>`;div.onclick=()=>{answers[origKey]=o.letter;showQ();renderQNav();};grid.appendChild(div);}); box.appendChild(grid); }
+function _renderChoiceList(q, origKey, box, letters='ABCD'){ const opts=_getOptionList(q,letters); const grid=document.createElement('div');grid.className='options-grid'; opts.forEach(o=>{const div=document.createElement('div');div.className='option-card'+(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]===o.letter?' selected':'');div.innerHTML=`<span class="opt-letter">${escapeHtmlStudent(o.letter)}</span><span>${escapeHtmlStudent(o.text)}</span>`;div.onclick=()=>{answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=o.letter;showQ();renderQNav();};grid.appendChild(div);}); box.appendChild(grid); }
 function _renderAssertionReason(q, origKey, box){ const items=_safeItems(q); const ar=(items&&typeof items[0]==='object'&&!items[0].label)?items[0]:{}; const assertion=ar.assertion||q.assertion||q.a||''; const reason=ar.reason||q.reason||q.b||''; if(assertion||reason){const panel=document.createElement('div');panel.className='match-hint';panel.innerHTML='<strong>Assertion:</strong> '+escapeHtmlStudent(assertion||'—')+'<br><strong>Reason:</strong> '+escapeHtmlStudent(reason||'—');box.appendChild(panel);} const opts=items.filter(x=>x&&x.label); q.items=opts.length?opts:[{label:'A',text:'Both Assertion and Reason are true, and Reason correctly explains Assertion.'},{label:'B',text:'Both Assertion and Reason are true, but Reason does not correctly explain Assertion.'},{label:'C',text:'Assertion is true, but Reason is false.'},{label:'D',text:'Assertion is false, but Reason is true.'},{label:'E',text:'Both Assertion and Reason are false.'}]; _renderChoiceList(q,origKey,box,'ABCDE'); }
 function _renderCaseStudy(q, origKey, box){ let meta={};try{meta=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const passage=meta.passage||q.passage||q.accept||''; if(passage){const div=document.createElement('div');div.className='match-hint';div.style.whiteSpace='pre-wrap';div.innerHTML='<strong>Case / Passage</strong><br>'+escapeHtmlStudent(passage);box.appendChild(div);} _renderChoiceList(q,origKey,box,'ABCD'); }
 function _renderImageMCQ(q, origKey, box){ let meta={};try{meta=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const src=meta.image||q.image||q.accept||''; if(src){const wrap=document.createElement('div');wrap.style.cssText='margin:10px 0 16px;text-align:center;';wrap.innerHTML='<img src="'+escapeHtmlStudent(src)+'" alt="Question image" style="max-width:100%;max-height:320px;border-radius:12px;border:1px solid var(--border);object-fit:contain;">';box.appendChild(wrap);} _renderChoiceList(q,origKey,box,'ABCD'); }
-function _renderMatrix(q, origKey, box){ const rows=_safeItems(q); if(!rows.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No matrix rows defined.</p>';return;} const opts=(q.accept||'True|False').split('|').map(x=>x.trim()).filter(Boolean); let cur={};try{cur=answers[origKey]?JSON.parse(answers[origKey]):{};}catch(e){} const table=document.createElement('table');table.className='cat-table';table.innerHTML='<thead><tr><th>Statement / Row</th><th>Answer</th></tr></thead>'; rows.forEach((r,i)=>{const statement=typeof r==='string'?r:(r.statement||r.item||r.label||('Row '+(i+1)));const tr=document.createElement('tr');tr.innerHTML='<td class="cat-item">'+escapeHtmlStudent(statement)+'</td><td class="cat-cell"><select class="cat-select" id="matrix-'+origKey+'-'+i+'"><option value="">— Select —</option>'+opts.map(o=>'<option value="'+escapeHtmlStudent(o)+'" '+(cur[i]===o?'selected':'')+'>'+escapeHtmlStudent(o)+'</option>').join('')+'</select></td>';table.appendChild(tr);}); box.appendChild(table); requestAnimationFrame(()=>rows.forEach((_,i)=>{const sel=document.getElementById(`matrix-${origKey}-${i}`);if(!sel)return;sel.addEventListener('change',()=>{const ans={};rows.forEach((_,j)=>{const v=document.getElementById(`matrix-${origKey}-${j}`)?.value||'';if(v)ans[j]=v;});answers[origKey]=Object.keys(ans).length?JSON.stringify(ans):null;renderQNav();});sel.addEventListener('keydown',e=>e.stopPropagation());})); }
-function _renderHotText(q, origKey, box){ const items=_safeItems(q); const chunks=items.length?items:String(q.accept||'').split('|').filter(Boolean); if(!chunks.length){_renderShort(q,origKey,box);return;} let selected=new Set();try{selected=new Set((answers[origKey]||'').split('|').filter(Boolean));}catch(e){} const hint=document.createElement('div');hint.className='short-answer-hint';hint.innerHTML='<strong>Select all correct words/phrases.</strong>';box.appendChild(hint); const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;'; chunks.forEach((c,i)=>{const text=typeof c==='string'?c.replace(/^\*/,''):(c.text||c.item||'');const key=String(i);const b=document.createElement('button');b.type='button';b.className='btn-sm '+(selected.has(key)?'btn-primary':'btn-outline');b.style.cssText='width:auto;padding:7px 10px;font-size:12px;';b.innerText=text;b.onclick=()=>{if(selected.has(key))selected.delete(key);else selected.add(key);answers[origKey]=[...selected].sort().join('|')||null;b.className='btn-sm '+(selected.has(key)?'btn-primary':'btn-outline');renderQNav();};wrap.appendChild(b);}); box.appendChild(wrap); }
-function _renderCodeAnswer(q, origKey, box){ let rubric={};try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const val=answers[origKey]||''; const lang=rubric.language||q.unit||'text'; const wrap=document.createElement('div'); wrap.innerHTML=`<div class="short-answer-hint"><strong>Code / Algorithm Response</strong> — Language: ${escapeHtmlStudent(lang)}. No AI API is used; scoring is by teacher keywords/tests.</div><textarea class="essay-textarea" id="code-${origKey}" spellcheck="false" style="font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;min-height:190px;" placeholder="Type code, pseudocode, SQL, algorithm, or structured answer here…">${escapeHtmlStudent(val)}</textarea>`; box.appendChild(wrap); requestAnimationFrame(()=>{const ta=document.getElementById(`code-${origKey}`);if(!ta)return;ta.addEventListener('input',()=>{answers[origKey]=ta.value.trim()?ta.value:null;renderQNav();});ta.addEventListener('keydown',e=>e.stopPropagation());}); }
+function _renderMatrix(q, origKey, box){ const rows=_safeItems(q); if(!rows.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No matrix rows defined.</p>';return;} const opts=(q.accept||'True|False').split('|').map(x=>x.trim()).filter(Boolean); let cur={};try{cur=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):{};}catch(e){} const table=document.createElement('table');table.className='cat-table';table.innerHTML='<thead><tr><th>Statement / Row</th><th>Answer</th></tr></thead>'; rows.forEach((r,i)=>{const statement=typeof r==='string'?r:(r.statement||r.item||r.label||('Row '+(i+1)));const tr=document.createElement('tr');tr.innerHTML='<td class="cat-item">'+escapeHtmlStudent(statement)+'</td><td class="cat-cell"><select class="cat-select" id="matrix-'+origKey+'-'+i+'"><option value="">— Select —</option>'+opts.map(o=>'<option value="'+escapeHtmlStudent(o)+'" '+(cur[i]===o?'selected':'')+'>'+escapeHtmlStudent(o)+'</option>').join('')+'</select></td>';table.appendChild(tr);}); box.appendChild(table); requestAnimationFrame(()=>rows.forEach((_,i)=>{const sel=document.getElementById(`matrix-${origKey}-${i}`);if(!sel)return;sel.addEventListener('change',()=>{const ans={};rows.forEach((_,j)=>{const v=document.getElementById(`matrix-${origKey}-${j}`)?.value||'';if(v)ans[j]=v;});answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=Object.keys(ans).length?JSON.stringify(ans):null;renderQNav();});sel.addEventListener('keydown',e=>e.stopPropagation());})); }
+function _renderHotText(q, origKey, box){ const items=_safeItems(q); const chunks=items.length?items:String(q.accept||'').split('|').filter(Boolean); if(!chunks.length){_renderShort(q,origKey,box);return;} let selected=new Set();try{selected=new Set((answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]||'').split('|').filter(Boolean));}catch(e){} const hint=document.createElement('div');hint.className='short-answer-hint';hint.innerHTML='<strong>Select all correct words/phrases.</strong>';box.appendChild(hint); const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;'; chunks.forEach((c,i)=>{const text=typeof c==='string'?c.replace(/^\*/,''):(c.text||c.item||'');const key=String(i);const b=document.createElement('button');b.type='button';b.className='btn-sm '+(selected.has(key)?'btn-primary':'btn-outline');b.style.cssText='width:auto;padding:7px 10px;font-size:12px;';b.innerText=text;b.onclick=()=>{if(selected.has(key))selected.delete(key);else selected.add(key);answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=[...selected].sort().join('|')||null;b.className='btn-sm '+(selected.has(key)?'btn-primary':'btn-outline');renderQNav();};wrap.appendChild(b);}); box.appendChild(wrap); }
+function _renderCodeAnswer(q, origKey, box){ let rubric={};try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const val=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]||''; const lang=rubric.language||q.unit||'text'; const wrap=document.createElement('div'); wrap.innerHTML=`<div class="short-answer-hint"><strong>Code / Algorithm Response</strong> — Language: ${escapeHtmlStudent(lang)}. No AI API is used; scoring is by teacher keywords/tests.</div><textarea class="essay-textarea" id="code-${origKey}" spellcheck="false" style="font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;min-height:190px;" placeholder="Type code, pseudocode, SQL, algorithm, or structured answer here…">${escapeHtmlStudent(val)}</textarea>`; box.appendChild(wrap); requestAnimationFrame(()=>{const ta=document.getElementById(`code-${origKey}`);if(!ta)return;ta.addEventListener('input',()=>{answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=ta.value.trim()?ta.value:null;renderQNav();});ta.addEventListener('keydown',e=>e.stopPropagation());}); }
 
 function escapeHtmlStudent(s){
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -2268,7 +2347,7 @@ async function submitExam(){
     questions.forEach((q)=>{
         const origKey=q._orig;
         const qtype=getQType(q);
-        const sa=answers[origKey];
+        const sa=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey];
 
         if(!hasAnswer(origKey)){skipped++;return;}
 
@@ -2425,7 +2504,7 @@ async function submitExam(){
     // Debug log — visible in browser DevTools console
     console.log('[CBT] Scoring complete:',{
         scoreInt, totalInt, percentage,
-        answers, questions: questions.map(q=>({orig:q._orig,ans:q.ans,studentAns:answers[q._orig]}))
+        answers, questions: questions.map(q=>({orig:q._orig,ans:q.ans,studentAns:answers[isMultiSubjectMode ? ((q._subjIdx !== undefined ? q._subjIdx : activeSubjectIdx) + '_' + q._orig) : q._orig]}))
     });
     const m=decodeMeta(exam.subject);
     const passmark=m.passmark;
@@ -2505,7 +2584,7 @@ async function submitExam(){
     } else questions.forEach((q,i)=>{
         const origKey=q._orig;
         const qtype=getQType(q);
-        const sa=answers[origKey]||null;
+        const sa=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]||null;
         const isSkipped=!hasAnswer(origKey);
         const tSec=questionTimes[origKey]||0;
         const tStr=tSec>=60?`${Math.floor(tSec/60)}m ${tSec%60}s`:`${tSec}s`;
@@ -2733,7 +2812,7 @@ async function submitExam(){
     questions.forEach((q)=>{
         const origKey=String(q._orig);
         const qtype=getQType(q);
-        const rawAns=answers[q._orig];
+        const rawAns=answers[isMultiSubjectMode ? ((q._subjIdx !== undefined ? q._subjIdx : activeSubjectIdx) + '_' + q._orig) : q._orig];
 
         const entry={
             answer:   rawAns !== undefined ? rawAns : null,
@@ -2859,11 +2938,24 @@ async function submitExam(){
     let saved = false;
     let lastError = '';
 
-    try{
-        await _attemptSave(fullBody, 'rpc');
-        saved = true;
-    }catch(rpcErr){
-        console.warn('[CBT] RPC save unavailable/failed; falling back to direct REST insert:', rpcErr.message);
+    // ── High-Concurrency Protection (1,000 Simultaneous Students) ──
+    // Apply randomized jitter delay (0-2000ms) to spread out simultaneous timer expiry bursts
+    const jitterMs = Math.floor(Math.random() * 2000);
+    await new Promise(r => setTimeout(r, jitterMs));
+
+    // Multi-Tier Retry Queue with Exponential Backoff (up to 5 attempts)
+    for(let retryAttempt = 1; retryAttempt <= 5; retryAttempt++){
+        try{
+            await _attemptSave(fullBody, `rpc-attempt-${retryAttempt}`);
+            saved = true;
+            break;
+        }catch(rpcErr){
+            console.warn(`[CBT Submission] RPC Attempt ${retryAttempt}/5 failed:`, rpcErr.message);
+            if(retryAttempt < 5){
+                const backoffDelay = Math.min(12000, Math.pow(2, retryAttempt - 1) * 800 + Math.floor(Math.random() * 800));
+                await new Promise(r => setTimeout(r, backoffDelay));
+            }
+        }
     }
 
     try{
@@ -3227,7 +3319,15 @@ function _addCalcHistory(entry){
 function _renderCalcHistory(){
   const list=document.getElementById('calc-history-list');
   if(!list)return;
-  list.innerHTML=_calcHistory.map(h=>`<div class="calc-history-item" onclick="calcUseHistory('${h.split('=').pop().trim()}')">${h}</div>`).join('');
+  list.innerHTML=_calcHistory.map((h, idx)=>`<div class="calc-history-item" onclick="calcUseHistoryByIndex(${idx})">${escapeHtmlStudent(h)}</div>`).join('');
+}
+
+function calcUseHistoryByIndex(idx){
+  const h = _calcHistory[idx];
+  if(!h) return;
+  const val = h.split('=').pop().trim();
+  document.getElementById('calc-display').value=val;
+  _calcJustEvaluated=true;
 }
 
 function calcUseHistory(val){

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit & Activity Logs • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Platform Audit & Activity Trail</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>📊 System Audit & Activity Logs</h1>
+      <p>Immutable record of platform events, assessment creations, score revisions, user status changes, and cloud syncs.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="loadAuditLogs()">🔄 Refresh Logs</button>
+      <button class="btn btn-outline" onclick="exportAuditLogsCSV()">📥 Export CSV</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Target Entity</th><th>Metadata</th></tr>
+        </thead>
+        <tbody id="audit-table-body">
+          <tr><td colspan="5" style="text-align:center;">Loading audit events...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script>
+let currentAuditLogs = [];
+async function loadAuditLogs() {
+  const tbody = document.getElementById('audit-table-body');
+  try {
+    const list = await App.sbRpc('admin_get_audit_logs', { p_limit: 100 });
+    currentAuditLogs = list || [];
+    if (!currentAuditLogs.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No audit events recorded yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = currentAuditLogs.map(a => `
+      <tr>
+        <td style="white-space:nowrap;font-size:12px;color:var(--text-muted);">${new Date(a.created_at).toLocaleString()}</td>
+        <td><strong>${escapeHtml(a.actor_email || 'System')}</strong></td>
+        <td><span class="badge badge-primary">${escapeHtml(a.action)}</span></td>
+        <td style="font-size:12px;">${escapeHtml(a.entity_type || '—')} (${escapeHtml(a.entity_id || '—')})</td>
+        <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">${JSON.stringify(a.metadata || {})}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);">Error loading audit logs: ${e.message}</td></tr>`;
+  }
+}
+
+function exportAuditLogsCSV() {
+  if (!currentAuditLogs.length) return showToast('No audit logs to export', 'info');
+  const headers = ['id', 'created_at', 'actor_email', 'action', 'entity_type', 'entity_id', 'metadata'];
+  const rows = currentAuditLogs.map(r => [
+    r.id, r.created_at, r.actor_email, r.action, r.entity_type, r.entity_id, JSON.stringify(r.metadata || {})
+  ].map(v => JSON.stringify(v || '')).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cbt_audit_logs_${new Date().toISOString().substring(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+document.addEventListener('DOMContentLoaded', loadAuditLogs);
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

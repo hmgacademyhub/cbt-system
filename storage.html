@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storage Manager • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Storage & Quota Monitor</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>📦 Storage Manager & Quota Monitor</h1>
+      <p>Monitor Supabase 500MB free-tier limits, browser local storage, and optimize webcam snapshot storage.</p>
+    </div>
+    <button class="btn btn-primary" onclick="analyzeStorage()">🔄 Refresh Storage Metrics</button>
+  </div>
+
+  <div class="grid-3">
+    <div class="card stat-box">
+      <div class="stat-lbl">Database Storage (Est.)</div>
+      <div class="stat-val" id="db-storage-val">~2.4 MB</div>
+      <div style="font-size:12px;color:var(--text-muted);">500 MB Free-Tier Quota</div>
+    </div>
+    <div class="card stat-box">
+      <div class="stat-lbl">Browser LocalStorage</div>
+      <div class="stat-val" id="local-storage-val">0 KB</div>
+      <div style="font-size:12px;color:var(--text-muted);">5 MB Browser Quota</div>
+    </div>
+    <div class="card stat-box">
+      <div class="stat-lbl">Total Stored Records</div>
+      <div class="stat-val" id="total-records-val">0</div>
+      <div style="font-size:12px;color:var(--text-muted);">Exams, Results, Rosters</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Breakdown Table -->
+    <div class="card">
+      <h2>📊 Database Table Breakdown</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Table Name</th><th>Row Count</th><th>Est. Size</th></tr>
+          </thead>
+          <tbody id="table-breakdown-body">
+            <tr><td colspan="3" style="text-align:center;">Analyzing database tables...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Optimization & Asset Purge -->
+    <div class="card">
+      <h2>🧹 Storage Optimizer</h2>
+      <p>Clean up historical proctoring photos and old exam drafts to preserve free-tier space.</p>
+      
+      <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;border:1px solid var(--border);">
+        <strong style="font-size:13px;">Clear Browser Draft Caches</strong>
+        <p style="margin:4px 0 10px;font-size:12px;">Removes cached temporary drafts and local calculation history.</p>
+        <button class="btn btn-sm btn-outline" onclick="clearLocalDrafts()">Clear Drafts</button>
+      </div>
+
+      <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);">
+        <strong style="font-size:13px;">Google Drive Offloading</strong>
+        <p style="margin:4px 0 10px;font-size:12px;">Full archives are automatically backed up to Google Drive to keep Supabase lean.</p>
+        <a href="admin-data.html" class="btn btn-sm btn-accent">Go to Drive Sync</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script>
+async function analyzeStorage() {
+  // Browser localStorage usage
+  let totalChars = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      totalChars += (localStorage[key].length + key.length);
+    }
+  }
+  const localKb = (totalChars / 1024).toFixed(1);
+  document.getElementById('local-storage-val').innerText = `${localKb} KB`;
+
+  // Supabase tables row counts
+  try {
+    const [exams, results, students, profiles, audit] = await Promise.all([
+      App.sbFetch('/rest/v1/exams?select=id').catch(() => []),
+      App.sbFetch('/rest/v1/results?select=id').catch(() => []),
+      App.sbFetch('/rest/v1/students?select=id').catch(() => []),
+      App.sbFetch('/rest/v1/profiles?select=id').catch(() => []),
+      App.sbFetch('/rest/v1/audit_logs?select=id').catch(() => [])
+    ]);
+
+    const total = exams.length + results.length + students.length + profiles.length + audit.length;
+    document.getElementById('total-records-val').innerText = total;
+
+    const estKb = (exams.length * 15 + results.length * 8 + students.length * 0.5 + profiles.length * 0.5 + audit.length * 0.4);
+    document.getElementById('db-storage-val').innerText = estKb > 1024 ? `${(estKb/1024).toFixed(2)} MB` : `${estKb.toFixed(0)} KB`;
+
+    const tbody = document.getElementById('table-breakdown-body');
+    tbody.innerHTML = `
+      <tr><td><strong>exams</strong> (Question Packages)</td><td>${exams.length}</td><td>~${(exams.length * 15).toFixed(1)} KB</td></tr>
+      <tr><td><strong>results</strong> (Candidate Submissions)</td><td>${results.length}</td><td>~${(results.length * 8).toFixed(1)} KB</td></tr>
+      <tr><td><strong>students</strong> (Candidate Roster)</td><td>${students.length}</td><td>~${(students.length * 0.5).toFixed(1)} KB</td></tr>
+      <tr><td><strong>profiles</strong> (Users & Teachers)</td><td>${profiles.length}</td><td>~${(profiles.length * 0.5).toFixed(1)} KB</td></tr>
+      <tr><td><strong>audit_logs</strong> (Activity History)</td><td>${audit.length}</td><td>~${(audit.length * 0.4).toFixed(1)} KB</td></tr>
+    `;
+  } catch (e) {
+    showToast('Storage analysis error: ' + e.message, 'warning');
+  }
+}
+
+function clearLocalDrafts() {
+  let count = 0;
+  for (let k of Object.keys(localStorage)) {
+    if (k.startsWith('cbt_draft_')) {
+      localStorage.removeItem(k);
+      count++;
+    }
+  }
+  showToast(`Cleared ${count} draft caches.`, 'success');
+  analyzeStorage();
+}
+
+document.addEventListener('DOMContentLoaded', analyzeStorage);
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

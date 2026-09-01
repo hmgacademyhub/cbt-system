@@ -136,6 +136,7 @@ tbody tr:hover td{background:var(--surface-hover);}
 /* ── BROADCAST MODAL ── */
 .broadcast-box{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:16px 18px;}
 </style>
+<script src="assets/js/site-help.js"></script>
 </head>
 <body>
 <div id="toast"></div>
@@ -1344,6 +1345,9 @@ function showToast(msg){
   t.innerText=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3500);
 }
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function pct(score,total){return total?Math.round((score/total)*100):0;}
 function formatTime(s){s=s||0;return`${Math.floor(s/60)}m ${s%60}s`;}
 function timeAgo(iso){
@@ -1678,8 +1682,8 @@ function updateOverview(){
     return`<div class="activity-item">
       <div class="activity-dot" style="background:${p>=50?'var(--primary)':'var(--danger)'};"></div>
       <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;">${r.student_name} <span style="color:var(--text-muted);font-weight:400;">· ${r.student_class}</span></div>
-        <div style="font-size:11px;color:var(--text-muted);">${m.subject} · <strong style="color:${p>=50?'var(--primary)':'var(--danger)'};">${p}%</strong> · ${teacher?teacher.email:'Unknown'} · ${timeAgo(r.created_at)}</div>
+        <div style="font-size:13px;font-weight:600;">${escHtml(r.student_name)} <span style="color:var(--text-muted);font-weight:400;">· ${escHtml(r.student_class)}</span></div>
+        <div style="font-size:11px;color:var(--text-muted);">${escHtml(m.subject)} · <strong style="color:${p>=50?'var(--primary)':'var(--danger)'};">${p}%</strong> · ${escHtml(teacher?teacher.email:'Unknown')} · ${timeAgo(r.created_at)}</div>
       </div>
     </div>`;
   }).join('');
@@ -1691,8 +1695,8 @@ function updateOverview(){
   pendEl.innerHTML=pending.map(p=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
       <div>
-        <div style="font-size:13px;font-weight:600;">${p.full_name||'—'}</div>
-        <div style="font-size:11px;color:var(--text-muted);">${p.email} · ${timeAgo(p.created_at)}</div>
+        <div style="font-size:13px;font-weight:600;">${escHtml(p.full_name||'—')}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${escHtml(p.email)} · ${timeAgo(p.created_at)}</div>
       </div>
       <div class="flex-gap">
         <button class="btn-sm" onclick="approveTeacher('${p.id}')" style="padding:5px 12px;font-size:11px;background:var(--primary);color:#000;">Approve</button>
@@ -2088,10 +2092,10 @@ function renderAllResults(){
       :v===1?`<span style="font-size:11px;color:var(--warning);">⚠️ ${v}</span>`
       :`<span style="font-size:11px;color:var(--danger);">🚨 ${v}</span>`;
     return`<tr>
-      <td style="font-weight:600;">${r.student_name}<br><small style="color:var(--text-muted);">${r.student_class} · #${r.attempt_number||1}</small></td>
-      <td>${r.student_class}</td>
-      <td style="font-size:12px;">${m.subject}</td>
-      <td style="font-size:12px;color:var(--text-muted);">${prof?.email||'—'}</td>
+      <td style="font-weight:600;">${escHtml(r.student_name)}<br><small style="color:var(--text-muted);">${escHtml(r.student_class)} · #${r.attempt_number||1}</small></td>
+      <td>${escHtml(r.student_class)}</td>
+      <td style="font-size:12px;">${escHtml(m.subject)}</td>
+      <td style="font-size:12px;color:var(--text-muted);">${escHtml(prof?.email||'—')}</td>
       <td style="font-weight:700;">${displayScore}/${displayTotal}</td>
       <td><span class="score-pill ${pillClass(p)}">${p}%</span></td>
       <td>${r.student_type==='registered'?'<span style="font-size:10px;font-weight:700;color:var(--info);">🔐 Registered</span>':'<span style="font-size:10px;font-weight:700;color:var(--primary);">🌐 Open</span>'}</td>
@@ -2387,5 +2391,6 @@ if('serviceWorker' in navigator && location.protocol !== 'file:'){
 
 </script>
 <script src="pwa_install_enforcer.js"></script>
+<script src="assets/js/chatbot.js"></script>
 </body>
 </html>

@@ -14,20 +14,42 @@ const SHELL_ASSETS = [
   './index.html',
   './teacher.html',
   './student.html',
+  './cbt-multi.html',
+  './cbt-prompts.html',
   './admin.html',
+  './admin-data.html',
+  './storage.html',
+  './platform-health.html',
+  './status-manager.html',
+  './settings.html',
+  './license.html',
+  './activity_log.html',
+  './certificate.html',
+  './generator.html',
+  './deployment_validator.html',
+  './feature_guide.html',
+  './link_checker.html',
   './offline.html',
   './manifest.webmanifest',
   './hmg-icon.svg',
   './assets/hmg-academy-logo.png',
-  './deployment_validator.html',
-  './feature_guide.html',
-  './link_checker.html',
-  './certificate.html',
+  './assets/css/style.css',
+  './assets/js/app.js',
+  './assets/js/drive-sync.js',
+  './assets/js/cbt-engine.js',
+  './assets/js/cbt-types.js',
+  './assets/js/cbt-exam-kit.js',
+  './assets/js/cbt-richtext.js',
+  './assets/js/license.js',
+  './assets/js/keepalive.js',
+  './assets/js/generator.js',
+  './pwa_install_enforcer.js',
   './robots.txt',
   './sitemap.xml',
   './browserconfig.xml',
   './llms.txt',
-  './pwa_install_enforcer.js'
+  './further_maths_sample.csv',
+  './COMPLETE_SCHEMA_SQL.sql'
 ];
 
 // Install event: cache the app shell
@@ -80,9 +102,11 @@ self.addEventListener('fetch', event => {
         if (cached) return cached;
         // For navigation requests, serve the offline page
         if (req.mode === 'navigate') {
-          return caches.match('./offline.html').then(page =>
-            page || caches.match('./index.html')
-          );
+          return caches.match('./offline.html')
+            .then(page => page || caches.match('/offline.html'))
+            .then(page => page || caches.match('offline.html'))
+            .then(page => page || caches.match('./index.html'))
+            .then(page => page || caches.match('/index.html'));
         }
         return new Response('Offline and not cached.', {
           status: 503,

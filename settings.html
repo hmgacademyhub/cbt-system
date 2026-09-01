@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Platform Settings • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Platform Settings & Configuration</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>⚙️ Platform Settings</h1>
+      <p>Configure institution branding, default grading scales, Supabase database credentials, and Google Drive auto-sync.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="saveAllSettings()">💾 Save Changes</button>
+      <button class="btn btn-outline" onclick="loadSettings()">🔄 Reload</button>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Branding Card -->
+    <div class="card">
+      <h2>🏫 Institution Branding</h2>
+      <p>Customize the platform name, contact information, and theme accents.</p>
+      <label>Institution / School Name</label>
+      <input type="text" id="set-inst-name" placeholder="e.g. HMG Academy">
+      
+      <label>Tagline / Motto</label>
+      <input type="text" id="set-inst-tagline" placeholder="e.g. Excellence in STEM & Computer-Based Testing">
+
+      <div class="grid-2">
+        <div>
+          <label>Primary Brand Color</label>
+          <input type="text" id="set-color-primary" value="#10b981" placeholder="#10b981">
+        </div>
+        <div>
+          <label>Accent Color</label>
+          <input type="text" id="set-color-accent" value="#8b5cf6" placeholder="#8b5cf6">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Support Phone / WhatsApp</label>
+          <input type="text" id="set-phone" placeholder="+234 810 086 6322">
+        </div>
+        <div>
+          <label>Support Email</label>
+          <input type="email" id="set-email" placeholder="hismarvellousgrace@gmail.com">
+        </div>
+      </div>
+    </div>
+
+    <!-- Assessment Defaults -->
+    <div class="card">
+      <h2>📝 Assessment & Grading Defaults</h2>
+      <p>Default parameters applied when creating new assessment packages.</p>
+      
+      <div class="grid-2">
+        <div>
+          <label>Default Pass Mark (%)</label>
+          <input type="number" id="set-passmark" min="1" max="100" value="50">
+        </div>
+        <div>
+          <label>Default Duration (Mins)</label>
+          <input type="number" id="set-duration" min="5" max="300" value="45">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Max Attempts Allowed</label>
+          <input type="number" id="set-attempts" min="1" max="99" value="1">
+        </div>
+        <div>
+          <label>Default Exam Mode</label>
+          <select id="set-mode">
+            <option value="open">Open (Name & Class)</option>
+            <option value="registered">Registered (Verified Student ID)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Result Release Mode</label>
+          <select id="set-release">
+            <option value="true">Immediate Score & Review</option>
+            <option value="false">Hold Score (Teacher Approval Required)</option>
+          </select>
+        </div>
+        <div>
+          <label>STEM Virtual Keyboard</label>
+          <select id="set-math-kbd">
+            <option value="true">Enabled by default</option>
+            <option value="false">Disabled by default</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Supabase Connection Config -->
+    <div class="card">
+      <h2>🔌 Supabase Database Connection</h2>
+      <p>Connect your free-tier Supabase PostgreSQL instance.</p>
+      
+      <label>Supabase Project URL</label>
+      <input type="text" id="set-sb-url" placeholder="https://your-project.supabase.co">
+
+      <label>Supabase Public Anon Key</label>
+      <input type="text" id="set-sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
+
+      <div class="flex-gap" style="margin-top:10px;">
+        <button class="btn btn-outline" onclick="testSupabaseConnection()">⚡ Test Connection</button>
+        <button class="btn btn-primary" onclick="triggerKeepalivePing()">🩺 Send Keepalive Ping</button>
+      </div>
+      <div id="sb-test-status" style="margin-top:12px;font-size:13px;font-weight:700;"></div>
+    </div>
+
+    <!-- Google Drive Sync Config -->
+    <div class="card">
+      <h2>☁️ Google Drive Cloud Sync</h2>
+      <p>Automate portable cloud backups directly into your school's Google Drive.</p>
+
+      <label>Google OAuth2 Web Client ID</label>
+      <input type="text" id="set-drive-client-id" placeholder="xxxx-xxxx.apps.googleusercontent.com">
+
+      <div class="grid-2">
+        <div>
+          <label>Auto-Sync Interval (Days)</label>
+          <input type="number" id="set-drive-days" min="1" max="30" value="7">
+        </div>
+        <div>
+          <label>Auto-Sync Status</label>
+          <select id="set-drive-enabled">
+            <option value="true">Enabled (Background Sync)</option>
+            <option value="false">Disabled (Manual Only)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex-gap" style="margin-top:10px;">
+        <button class="btn btn-accent" onclick="authorizeGoogleDrive()">🔑 Authorize Google Drive</button>
+        <button class="btn btn-outline" onclick="syncDriveNow()">☁️ Backup to Drive Now</button>
+      </div>
+      <div id="drive-status-msg" style="margin-top:12px;font-size:13px;"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/drive-sync.js"></script>
+<script src="assets/js/keepalive.js"></script>
+<script>
+async function loadSettings() {
+  const inst = JSON.parse(localStorage.getItem('cbt_institution_settings') || '{}');
+  document.getElementById('set-inst-name').value = inst.name || 'HMG Academy CBT Pro';
+  document.getElementById('set-inst-tagline').value = inst.tagline || 'Computer-Based Testing & Learning Solutions';
+  document.getElementById('set-color-primary').value = inst.primaryColor || '#10b981';
+  document.getElementById('set-color-accent').value = inst.accentColor || '#8b5cf6';
+  document.getElementById('set-phone').value = inst.phone || '+234 810 086 6322';
+  document.getElementById('set-email').value = inst.email || 'hismarvellousgrace@gmail.com';
+  document.getElementById('set-passmark').value = inst.passmark || 50;
+  document.getElementById('set-duration').value = inst.duration || 45;
+  document.getElementById('set-attempts').value = inst.attempts || 1;
+  document.getElementById('set-mode').value = inst.mode || 'open';
+  document.getElementById('set-release').value = inst.release !== false ? 'true' : 'false';
+  document.getElementById('set-math-kbd').value = inst.mathKbd ? 'true' : 'false';
+  document.getElementById('set-sb-url').value = App.SB_URL;
+  document.getElementById('set-sb-key').value = App.SB_KEY;
+
+  if (window.DriveSync) {
+    const dCfg = await DriveSync.loadCfg();
+    document.getElementById('set-drive-client-id').value = dCfg.clientId || '';
+    document.getElementById('set-drive-days').value = dCfg.days || 7;
+    document.getElementById('set-drive-enabled').value = dCfg.enabled ? 'true' : 'false';
+  }
+}
+
+async function saveAllSettings() {
+  const inst = {
+    name: document.getElementById('set-inst-name').value.trim(),
+    tagline: document.getElementById('set-inst-tagline').value.trim(),
+    primaryColor: document.getElementById('set-color-primary').value.trim(),
+    accentColor: document.getElementById('set-color-accent').value.trim(),
+    phone: document.getElementById('set-phone').value.trim(),
+    email: document.getElementById('set-email').value.trim(),
+    passmark: Number(document.getElementById('set-passmark').value) || 50,
+    duration: Number(document.getElementById('set-duration').value) || 45,
+    attempts: Number(document.getElementById('set-attempts').value) || 1,
+    mode: document.getElementById('set-mode').value,
+    release: document.getElementById('set-release').value === 'true',
+    mathKbd: document.getElementById('set-math-kbd').value === 'true'
+  };
+  localStorage.setItem('cbt_institution_settings', JSON.stringify(inst));
+
+  if (window.DriveSync) {
+    await DriveSync.saveCfg({
+      clientId: document.getElementById('set-drive-client-id').value.trim(),
+      days: Number(document.getElementById('set-drive-days').value) || 7,
+      enabled: document.getElementById('set-drive-enabled').value === 'true'
+    });
+  }
+
+  showToast('Settings saved successfully!', 'success');
+}
+
+async function testSupabaseConnection() {
+  const stat = document.getElementById('sb-test-status');
+  stat.innerHTML = '⏳ Testing Supabase connection...';
+  stat.style.color = 'var(--text-muted)';
+  try {
+    const start = Date.now();
+    await App.sbFetch('/rest/v1/institutions?select=id&limit=1');
+    const latency = Date.now() - start;
+    stat.innerHTML = `✅ Connected successfully to Supabase! Latency: ${latency}ms`;
+    stat.style.color = 'var(--primary)';
+  } catch (e) {
+    stat.innerHTML = `❌ Connection error: ${e.message}`;
+    stat.style.color = 'var(--danger)';
+  }
+}
+
+async function triggerKeepalivePing() {
+  const res = await FreeTierKeeper.ping();
+  if (res.success) showToast('Keepalive ping sent to Supabase!', 'success');
+  else showToast('Keepalive ping throttled or error', 'info');
+}
+
+async function authorizeGoogleDrive() {
+  try {
+    await DriveSync.saveCfg({ clientId: document.getElementById('set-drive-client-id').value.trim() });
+    await DriveSync.getToken(true);
+    document.getElementById('drive-status-msg').innerHTML = '✅ Google Drive authorized successfully!';
+    document.getElementById('drive-status-msg').style.color = 'var(--primary)';
+    showToast('Google Drive authorized!', 'success');
+  } catch (e) {
+    document.getElementById('drive-status-msg').innerHTML = `⚠️ Auth failed: ${e.message}`;
+    document.getElementById('drive-status-msg').style.color = 'var(--danger)';
+  }
+}
+
+async function syncDriveNow() {
+  const stat = document.getElementById('drive-status-msg');
+  stat.innerHTML = '⏳ Generating backup envelope and uploading to Google Drive...';
+  try {
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      institution: document.getElementById('set-inst-name').value,
+      localSettings: localStorage.getItem('cbt_institution_settings')
+    };
+    const res = await DriveSync.uploadBackup(backupData);
+    stat.innerHTML = `✅ Cloud backup uploaded! File ID: ${res.id}`;
+    stat.style.color = 'var(--primary)';
+    showToast('Google Drive backup uploaded!', 'success');
+  } catch (e) {
+    stat.innerHTML = `❌ Drive upload failed: ${e.message}`;
+    stat.style.color = 'var(--danger)';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadSettings);
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

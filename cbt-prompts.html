@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Question Prompts Studio • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">AI Prompt Studio & Validator</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>🤖 AI Question Prompts Studio</h1>
+      <p>Generate highly structured, strict CSV & JSON question bank prompts ready to paste into free ChatGPT, Claude, Gemini, or DeepSeek without paid AI APIs.</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Prompt Configurator -->
+    <div class="card">
+      <h2>🎛️ Configure Your Prompt</h2>
+      
+      <label>Subject / Course</label>
+      <input type="text" id="ai-subject" value="Mathematics" placeholder="e.g. Further Mathematics, Biology, English">
+
+      <label>Topic / Curriculum Focus</label>
+      <input type="text" id="ai-topic" value="Quadratic Equations & Polynomials" placeholder="e.g. Photosynthesis, Trigonometry">
+
+      <div class="grid-2">
+        <div>
+          <label>Target Level / Class</label>
+          <input type="text" id="ai-class" value="SS 2 / Grade 11" placeholder="e.g. JSS 3, SS 3, 100 Level">
+        </div>
+        <div>
+          <label>Question Count</label>
+          <input type="number" id="ai-count" value="10" min="5" max="100">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Target Exam Style</label>
+          <select id="ai-exam-style">
+            <option value="utme_jamb">JAMB UTME Comprehensive Practice (English + 3 Subjects)</option>
+            <option value="waec_ssce">WAEC / SSCE Senior Secondary Standard</option>
+            <option value="neco_bece">NECO / BECE Junior & Senior Standard</option>
+            <option value="cambridge_igcse">Cambridge IGCSE / GCE International Standard</option>
+            <option value="sat_act">SAT / ACT Evidence-Based Reading & Math</option>
+            <option value="multiline_math">STEM / Multi-Line Mathematics & Calculus</option>
+            <option value="physics_chemistry">Physics & Chemistry with Units & Constants</option>
+            <option value="medical_nursing">Medical / Nursing Clinical Case Scenarios</option>
+            <option value="law_governance">Law & Governance Jurisprudence Analysis</option>
+            <option value="code_sql">Computer Science & Python / SQL Algorithms</option>
+            <option value="passage_set">Passage / Case Study Set (Pinned Stimulus)</option>
+            <option value="differentiated">Differentiated (Support / Core / Stretch)</option>
+            <option value="diagnostic_misconceptions">Diagnostic Misconceptions & Distractors</option>
+            <option value="enterprise_37">Full 37+ Question Types Comprehensive Pack</option>
+          </select>
+        </div>
+        <div>
+          <label>Difficulty Tier</label>
+          <select id="ai-difficulty">
+            <option value="Balanced (40% Medium, 30% Hard, 30% Easy)">Balanced (Standard)</option>
+            <option value="Easy / Foundational">Easy / Foundational</option>
+            <option value="Hard / High Order Thinking (HOTS)">Hard / High Order Thinking</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Primary Question Type</label>
+          <select id="ai-qtype">
+            <option value="mcq">MCQ (Multiple Choice — 4 Options)</option>
+            <option value="mrq">MRQ (Multiple Response / Multi-Select)</option>
+            <option value="tf">True / False</option>
+            <option value="short">Short Answer / Exact Match</option>
+            <option value="numeric">Numeric Input with Tolerance</option>
+            <option value="matching">Matching Pairs</option>
+            <option value="ordering">Ordering / Sequencing</option>
+            <option value="cloze">Fill in the Blanks (Cloze)</option>
+            <option value="assertion_reason">Assertion–Reason</option>
+            <option value="case_study">Case Study / Passage</option>
+            <option value="code">Code / SQL / Algorithm</option>
+            <option value="mixed">Mixed (All Question Types)</option>
+          </select>
+        </div>
+        <div>
+          <label>Output Format</label>
+          <select id="ai-format">
+            <option value="csv">Strict 14-Column CSV</option>
+            <option value="json">JSON Array</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="generatePrompt()" style="width:100%;margin-top:10px;">⚡ Generate AI Prompt</button>
+    </div>
+
+    <!-- Generated Prompt & 1-Click Copy -->
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:12px;">
+        <h2>📋 Copy-Ready Prompt</h2>
+        <button class="btn btn-sm btn-primary" onclick="copyGeneratedPrompt()">📋 Copy Prompt</button>
+      </div>
+      <p style="font-size:12px;">Copy this prompt and paste it directly into <a href="https://chatgpt.com" target="_blank">ChatGPT</a>, <a href="https://claude.ai" target="_blank">Claude</a>, or <a href="https://deepseek.com" target="_blank">DeepSeek</a>.</p>
+      <textarea id="generated-prompt-text" style="height:320px;font-family:ui-monospace, Consolas, monospace;font-size:12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;width:100%;" readonly></textarea>
+    </div>
+  </div>
+
+  <!-- AI Output Validator & Instant Loader -->
+  <div class="card">
+    <h2>🧪 Test & Load AI Output into Question Bank</h2>
+    <p>Paste the CSV/JSON output returned by your AI assistant below to validate its syntax and verify the questions before loading.</p>
+    
+    <textarea id="ai-raw-response" style="height:160px;font-family:ui-monospace, Consolas, monospace;font-size:12px;margin-bottom:12px;" placeholder="Paste AI CSV or JSON response here…"></textarea>
+    
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="validateAndPreviewQuestions()">🔍 Validate AI Output</button>
+      <button class="btn btn-accent" onclick="loadIntoTeacherHub()">📥 Load into Teacher Dashboard</button>
+    </div>
+
+    <div id="ai-preview-box" style="margin-top:16px;display:none;"></div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script>
+let parsedQuestionsBuffer = [];
+
+function generatePrompt() {
+  const subject = document.getElementById('ai-subject').value.trim() || 'Mathematics';
+  const topic = document.getElementById('ai-topic').value.trim() || 'General';
+  const cls = document.getElementById('ai-class').value.trim() || 'SS 2';
+  const count = document.getElementById('ai-count').value || '10';
+  const examStyle = document.getElementById('ai-exam-style').value;
+  const difficulty = document.getElementById('ai-difficulty').value;
+  const qtype = document.getElementById('ai-qtype').value;
+  const format = document.getElementById('ai-format').value;
+
+  let prompt = `You are an expert STEM educator and professional CBT question author for ${examStyle}.
+Please generate exactly ${count} high-quality assessment questions for:
+- Subject: ${subject}
+- Topic: ${topic}
+- Class/Level: ${cls}
+- Difficulty: ${difficulty}
+- Target Question Type: ${qtype}
+
+CRITICAL FORMATTING RULES:
+Output MUST be in raw, clean ${format.toUpperCase()} format only. Do not add markdown code blocks (no \`\`\`csv), no preamble, no commentary, and no concluding text.
+
+`;
+
+  if (format === 'csv') {
+    prompt += `CSV HEADER (Row 1):
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items
+
+COLUMN SPECIFICATIONS:
+1. Question: The question text. Wrap in double quotes if it contains commas or equations.
+2. A, B, C, D: Option choices (leave C and D empty for True/False).
+3. CorrectAnswer: Exactly A, B, C, or D (or comma-separated A,B,C for MRQ).
+4. Explanation: Step-by-step mathematical or conceptual explanation.
+5. Type: "${qtype}" (e.g. mcq, mrq, tf, short, numeric, matching, ordering, cloze).
+6. Tolerance: Numeric tolerance margin (e.g. 0.05) or blank.
+7. Unit: Unit symbol (e.g. m/s, kg, V, $) or blank.
+8. Accept: Pipe-separated synonyms for short answers or blank.
+9. MRQ_AON: "true" for all-or-nothing, "false" for partial credit.
+10. Pairs: JSON array of matching pairs if applicable.
+11. Items: JSON array of items/categories if applicable.
+
+SAMPLE ROW:
+"Find the derivative of f(x) = 3x^2 + 5x - 2","6x + 5","6x - 2","3x + 5","6x","A","Power rule: d/dx(3x^2) = 6x, d/dx(5x) = 5.","mcq",,,,,`;
+  } else {
+    prompt += `Output must be a valid JSON array of question objects matching:
+[
+  {
+    "q": "Question text",
+    "a": "Option A",
+    "b": "Option B",
+    "c": "Option C",
+    "d": "Option D",
+    "ans": "A",
+    "exp": "Explanation text",
+    "type": "${qtype}"
+  }
+]`;
+  }
+
+  document.getElementById('generated-prompt-text').value = prompt;
+  showToast('Prompt generated!', 'success');
+}
+
+function copyGeneratedPrompt() {
+  const txt = document.getElementById('generated-prompt-text').value;
+  if (!txt) return showToast('Generate a prompt first.', 'info');
+  navigator.clipboard.writeText(txt);
+  showToast('Prompt copied to clipboard! Paste into ChatGPT or Claude.', 'success');
+}
+
+function validateAndPreviewQuestions() {
+  const raw = document.getElementById('ai-raw-response').value.trim();
+  if (!raw) return showToast('Please paste the AI output first.', 'warning');
+  const box = document.getElementById('ai-preview-box');
+  box.style.display = 'block';
+
+  try {
+    if (raw.startsWith('[') || raw.startsWith('{')) {
+      parsedQuestionsBuffer = JSON.parse(raw);
+    } else {
+      // Parse CSV
+      const lines = raw.split(/\r?\n/).filter(l => l.trim());
+      const hasHeader = /^(question|q\b)/i.test(lines[0]);
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+      parsedQuestionsBuffer = dataLines.map((line, idx) => {
+        const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
+        return {
+          q: parts[0] || `Question ${idx+1}`,
+          a: parts[1] || '',
+          b: parts[2] || '',
+          c: parts[3] || '',
+          d: parts[4] || '',
+          ans: parts[5] || 'A',
+          exp: parts[6] || '',
+          type: parts[7] || 'mcq'
+        };
+      });
+    }
+
+    box.innerHTML = `
+      <div style="background:var(--surface-2);border:1px solid var(--primary);border-radius:var(--radius-sm);padding:14px;">
+        <strong style="color:var(--primary);">✅ Validated ${parsedQuestionsBuffer.length} Question(s) Successfully!</strong>
+        <div style="margin-top:8px;max-height:220px;overflow-y:auto;font-size:12px;">
+          ${parsedQuestionsBuffer.map((q, i) => `<div style="padding:4px 0;border-bottom:1px solid var(--border);">Q${i+1}. ${escapeHtml(q.q)} (Ans: ${escapeHtml(q.ans)})</div>`).join('')}
+        </div>
+      </div>
+    `;
+    showToast(`Validated ${parsedQuestionsBuffer.length} questions!`, 'success');
+  } catch (e) {
+    box.innerHTML = `<div style="color:var(--danger);">❌ Parse error: ${e.message}</div>`;
+  }
+}
+
+function loadIntoTeacherHub() {
+  if (!parsedQuestionsBuffer.length) return showToast('Validate questions before loading.', 'warning');
+  localStorage.setItem('cbt_imported_ai_questions', JSON.stringify(parsedQuestionsBuffer));
+  showToast('Questions saved! Redirecting to Teacher Hub...', 'success');
+  setTimeout(() => window.location.href = 'teacher.html', 1000);
+}
+
+document.addEventListener('DOMContentLoaded', generatePrompt);
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

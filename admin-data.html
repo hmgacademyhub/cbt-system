@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Data & Portability • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Admin Data Portability & Sync</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>💾 Admin Data & Portability</h1>
+      <p>1-click cloud backup to Google Drive, full portable JSON archives, data envelope restores, and batch CSV/Excel export.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="exportFullEnvelope()">📦 Export Full Archive</button>
+      <button class="btn btn-accent" onclick="DriveSync.checkAutoSync(getFullEnvelopePayload)">☁️ Sync to Google Drive</button>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Google Drive Sync Card -->
+    <div class="card">
+      <h2>☁️ Google Drive Sync & Backups</h2>
+      <p>Continuous automatic background synchronization directly to your institution's Google Drive storage.</p>
+      
+      <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:16px;margin-bottom:14px;border:1px solid var(--border);">
+        <div class="flex-between" style="margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:700;">Drive Connection:</span>
+          <span class="badge badge-primary" id="drive-badge">Connected</span>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:13px;color:var(--text-muted);">Last Cloud Backup:</span>
+          <strong id="drive-last-ts" style="font-size:13px;">Checking...</strong>
+        </div>
+      </div>
+
+      <div class="flex-gap" style="margin-bottom:14px;">
+        <button class="btn btn-primary" onclick="backupToDriveNow()">☁️ Backup Now</button>
+        <button class="btn btn-outline" onclick="loadDriveBackupsList()">📋 List Cloud Backups</button>
+      </div>
+
+      <div id="drive-file-list" style="max-height:220px;overflow-y:auto;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--bg);display:none;"></div>
+    </div>
+
+    <!-- Data Restore Card -->
+    <div class="card">
+      <h2>📥 Import & Restore Data Envelope</h2>
+      <p>Restore previous exam question banks, candidate results, and rosters from a portable JSON backup file.</p>
+
+      <div style="border:2px dashed var(--border-light);border-radius:var(--radius-sm);padding:24px;text-align:center;background:var(--bg);margin-bottom:14px;">
+        <div style="font-size:32px;margin-bottom:8px;">📂</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Select or Drop Backup JSON Envelope</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Supports complete CBT Pro JSON backup packages</div>
+        <input type="file" id="restore-file-input" accept=".json,application/json" onchange="handleRestoreFile(this.files[0])" style="display:none;">
+        <button class="btn btn-outline" onclick="document.getElementById('restore-file-input').click()">Browse JSON File</button>
+      </div>
+
+      <div id="restore-preview" style="display:none;font-size:13px;padding:12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:12px;"></div>
+    </div>
+  </div>
+
+  
+  <!-- DISASTER RECOVERY & PROJECT MIGRATION -->
+  <div class="card" style="border:2px solid var(--primary);background:radial-gradient(circle at top right, rgba(16,185,129,0.06), transparent 70%), var(--surface);">
+    <div class="flex-between" style="margin-bottom:12px;">
+      <div>
+        <h2 style="color:var(--primary);margin-bottom:4px;">🚨 Disaster Recovery & Migration to Fresh Supabase Project</h2>
+        <p style="margin-bottom:0;">If a previous Supabase project became paused or permanently inactive, you can connect a <strong>brand-new blank Supabase project</strong> and re-populate all your historical exams, questions, candidate rosters, and results directly from your Google Drive backup in under 30 seconds!</p>
+      </div>
+      <span class="badge badge-primary">Zero Data Loss Guard</span>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px;">
+      <div style="background:var(--surface-2);padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+        <strong style="font-size:13px;display:block;margin-bottom:8px;">Step 1: Enter New Supabase Project Credentials</strong>
+        <label>New Supabase URL</label>
+        <input type="text" id="dr-sb-url" placeholder="https://new-project.supabase.co" style="margin-bottom:8px;">
+        <label>New Supabase Anon Key</label>
+        <input type="text" id="dr-sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." style="margin-bottom:8px;">
+        <button class="btn btn-sm btn-outline" onclick="testNewSupabaseConnection()">⚡ Verify New Database</button>
+        <span id="dr-verify-status" style="font-size:12px;margin-left:8px;"></span>
+      </div>
+
+      <div style="background:var(--surface-2);padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+        <strong style="font-size:13px;display:block;margin-bottom:8px;">Step 2: Fetch Cloud Archive from Google Drive</strong>
+        <p style="font-size:12px;margin-bottom:12px;">Connect to the school's existing Google Drive account where backups are stored.</p>
+        <div class="flex-gap">
+          <button class="btn btn-sm btn-accent" onclick="authAndListDriveForRecovery()">🔑 Connect Google Drive</button>
+          <button class="btn btn-sm btn-primary" id="dr-start-btn" onclick="executeDisasterRecoveryMigration()" disabled>🚀 Re-hydrate New Project</button>
+        </div>
+        <select id="dr-backup-select" style="margin-top:10px;margin-bottom:0;display:none;font-size:12px;"></select>
+      </div>
+    </div>
+
+    <div id="dr-progress-box" style="display:none;margin-top:16px;background:var(--bg);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--primary);font-size:13px;"></div>
+  </div>
+
+<!-- Batch Exporters -->
+  <div class="card">
+    <h2>📊 Batch Data Exporters</h2>
+    <p>Download individual platform tables in standard CSV and JSON formats for spreadsheet reporting.</p>
+    
+    <div class="grid-4">
+      <div class="stat-box">
+        <div class="stat-lbl">Assessments</div>
+        <div style="margin:12px 0;"><button class="btn btn-sm btn-outline" onclick="exportTableData('exams', 'csv')">Export CSV</button></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Candidate Results</div>
+        <div style="margin:12px 0;"><button class="btn btn-sm btn-outline" onclick="exportTableData('results', 'csv')">Export CSV</button></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Student Rosters</div>
+        <div style="margin:12px 0;"><button class="btn btn-sm btn-outline" onclick="exportTableData('students', 'csv')">Export CSV</button></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Audit Log Events</div>
+        <div style="margin:12px 0;"><button class="btn btn-sm btn-outline" onclick="exportTableData('audit_logs', 'csv')">Export CSV</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="card" style="border-color:rgba(239,68,68,0.4);">
+    <h2 style="color:var(--danger);">⚠️ Danger Zone</h2>
+    <p>Carefully manage system resets and purge old test data.</p>
+    
+    <div class="flex-between">
+      <div>
+        <strong style="font-size:14px;color:var(--text);">Purge Practice Submissions</strong>
+        <div style="font-size:12px;color:var(--text-muted);">Deletes test candidate results without modifying exam question banks.</div>
+      </div>
+      <button class="btn btn-danger" onclick="purgeTestResults()">🗑 Purge Test Submissions</button>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/drive-sync.js"></script>
+<script>
+async function getFullEnvelopePayload() {
+  const [exams, results, students, profiles] = await Promise.all([
+    App.sbFetch('/rest/v1/exams?select=*').catch(() => []),
+    App.sbFetch('/rest/v1/results?select=*').catch(() => []),
+    App.sbFetch('/rest/v1/students?select=*').catch(() => []),
+    App.sbFetch('/rest/v1/profiles?select=*').catch(() => [])
+  ]);
+
+  return {
+    version: '10.0',
+    platform: 'HMG Academy CBT Pro',
+    exportedAt: new Date().toISOString(),
+    institution: JSON.parse(localStorage.getItem('cbt_institution_settings') || '{}'),
+    counts: {
+      exams: exams.length,
+      results: results.length,
+      students: students.length,
+      profiles: profiles.length
+    },
+    data: { exams, results, students, profiles }
+  };
+}
+
+async function exportFullEnvelope() {
+  try {
+    showToast('Compiling complete platform envelope...', 'info');
+    const envelope = await getFullEnvelopePayload();
+    const str = JSON.stringify(envelope, null, 2);
+    const blob = new Blob([str], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `HMG_CBT_FullArchive_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast('Full archive downloaded successfully!', 'success');
+  } catch (e) {
+    showToast('Export failed: ' + e.message, 'danger');
+  }
+}
+
+async function backupToDriveNow() {
+  try {
+    showToast('Uploading cloud backup to Google Drive...', 'info');
+    const envelope = await getFullEnvelopePayload();
+    const res = await DriveSync.uploadBackup(envelope);
+    showToast('Backup saved to Google Drive!', 'success');
+    loadDriveStatus();
+  } catch (e) {
+    showToast('Drive backup failed: ' + e.message, 'danger');
+  }
+}
+
+async function loadDriveStatus() {
+  const cfg = await DriveSync.loadCfg();
+  document.getElementById('drive-badge').innerText = DriveSync.isConfigured() ? 'Configured' : 'Setup Required';
+  document.getElementById('drive-last-ts').innerText = cfg.lastBackup ? new Date(cfg.lastBackup).toLocaleString() : 'No backups yet';
+}
+
+async function loadDriveBackupsList() {
+  const el = document.getElementById('drive-file-list');
+  el.style.display = 'block';
+  el.innerHTML = '⏳ Loading backups from Google Drive...';
+  try {
+    const files = await DriveSync.listBackups();
+    if (!files.length) {
+      el.innerHTML = 'No backup files found in Google Drive folder.';
+      return;
+    }
+    el.innerHTML = files.map(f => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <strong>${f.name}</strong><br>
+          <span style="color:var(--text-muted);">${new Date(f.createdTime).toLocaleString()} · ${(Number(f.size||0)/1024).toFixed(1)} KB</span>
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="restoreFromDriveFile('${f.id}')">Restore</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = 'Error listing files: ' + e.message;
+  }
+}
+
+async function restoreFromDriveFile(fileId) {
+  if (!confirm('Restore platform data from this Google Drive backup? Existing records will be updated.')) return;
+  try {
+    showToast('Downloading backup from Drive...', 'info');
+    const data = await DriveSync.downloadBackup(fileId);
+    await processRestoreEnvelope(data);
+  } catch (e) {
+    showToast('Drive restore error: ' + e.message, 'danger');
+  }
+}
+
+function handleRestoreFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const prev = document.getElementById('restore-preview');
+      prev.style.display = 'block';
+      prev.innerHTML = `
+        <strong>Envelope Ready:</strong> ${data.platform || 'CBT Archive'} · Exported: ${new Date(data.exportedAt).toLocaleDateString()}<br>
+        <span style="color:var(--text-muted);">Contains: ${data.counts?.exams || 0} exams, ${data.counts?.results || 0} results, ${data.counts?.students || 0} students</span><br>
+        <button class="btn btn-sm btn-primary" onclick='processRestoreEnvelope(${JSON.stringify(data)})' style="margin-top:8px;">Apply Restore</button>
+      `;
+    } catch (err) {
+      showToast('Invalid JSON backup file', 'danger');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function processRestoreEnvelope(envelope) {
+  try {
+    showToast('Restoring records into Supabase...', 'info');
+    if (envelope.data?.exams && envelope.data.exams.length) {
+      for (const ex of envelope.data.exams) {
+        await App.sbFetch('/rest/v1/exams', 'POST', ex).catch(() => {});
+      }
+    }
+    showToast('Data restored successfully!', 'success');
+  } catch (e) {
+    showToast('Restore failed: ' + e.message, 'danger');
+  }
+}
+
+async function exportTableData(table, format) {
+  try {
+    const data = await App.sbFetch(`/rest/v1/${table}?select=*`);
+    if (!data.length) return showToast('Table is currently empty.', 'info');
+    let content = '';
+    let mime = 'text/plain';
+    if (format === 'csv') {
+      const headers = Object.keys(data[0]);
+      const rows = data.map(row => headers.map(h => JSON.stringify(row[h] !== undefined ? row[h] : '')).join(','));
+      content = [headers.join(','), ...rows].join('\n');
+      mime = 'text/csv';
+    } else {
+      content = JSON.stringify(data, null, 2);
+      mime = 'application/json';
+    }
+    const blob = new Blob([content], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `cbt_${table}_${new Date().toISOString().substring(0,10)}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e) {
+    showToast('Export failed: ' + e.message, 'danger');
+  }
+}
+
+
+// ═══════════════════════════════════════════
+// DISASTER RECOVERY & NEW PROJECT MIGRATION
+// ═══════════════════════════════════════════
+let _drDownloadedData = null;
+
+async function testNewSupabaseConnection() {
+  const url = document.getElementById('dr-sb-url').value.trim();
+  const key = document.getElementById('dr-sb-key').value.trim();
+  const stat = document.getElementById('dr-verify-status');
+  if (!url || !key) return alert('Please enter both Supabase URL and Anon Key.');
+
+  stat.innerHTML = '⏳ Testing connection...';
+  try {
+    const res = await fetch(`${url}/rest/v1/institutions?select=id&limit=1`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+    });
+    if (res.ok) {
+      stat.innerHTML = '✅ Connection Verified!';
+      stat.style.color = 'var(--primary)';
+    } else {
+      stat.innerHTML = `⚠️ HTTP ${res.status} (Make sure COMPLETE_SCHEMA_SQL.sql has been run)`;
+      stat.style.color = 'var(--warning)';
+    }
+  } catch (e) {
+    stat.innerHTML = '❌ Connection failed: ' + e.message;
+    stat.style.color = 'var(--danger)';
+  }
+}
+
+async function authAndListDriveForRecovery() {
+  try {
+    showToast('Authorizing Google Drive...', 'info');
+    await DriveSync.getToken(true);
+    const files = await DriveSync.listBackups();
+    const sel = document.getElementById('dr-backup-select');
+    if (!files.length) {
+      alert('No backup files found in your Google Drive HMG_CBT_Backups folder.');
+      return;
+    }
+    sel.style.display = 'block';
+    sel.innerHTML = files.map(f => `<option value="${f.id}">${f.name} (${new Date(f.createdTime).toLocaleDateString()})</option>`).join('');
+    document.getElementById('dr-start-btn').disabled = false;
+    showToast(`Found ${files.length} cloud backups on Google Drive!`, 'success');
+  } catch (e) {
+    showToast('Google Drive error: ' + e.message, 'danger');
+  }
+}
+
+async function executeDisasterRecoveryMigration() {
+  const fileId = document.getElementById('dr-backup-select').value;
+  const newUrl = document.getElementById('dr-sb-url').value.trim();
+  const newKey = document.getElementById('dr-sb-key').value.trim();
+  const pBox = document.getElementById('dr-progress-box');
+
+  if (!fileId) return alert('Please select a backup file from Google Drive.');
+  if (!confirm('Re-hydrate new Supabase project with selected Google Drive backup? All historical exams, results, and rosters will be restored.')) return;
+
+  pBox.style.display = 'block';
+  pBox.innerHTML = '⏳ <strong>Phase 1/3:</strong> Downloading cloud archive from Google Drive...';
+
+  try {
+    const data = await DriveSync.downloadBackup(fileId);
+    pBox.innerHTML = `⏳ <strong>Phase 2/3:</strong> Validating archive envelope (${data.counts?.exams || 0} exams, ${data.counts?.results || 0} results)...`;
+
+    // Switch active Supabase credentials if new ones provided
+    if (newUrl && newKey) {
+      App.SB_URL = newUrl;
+      App.SB_KEY = newKey;
+      localStorage.setItem('cbt_custom_sb_url', newUrl);
+      localStorage.setItem('cbt_custom_sb_key', newKey);
+    }
+
+    pBox.innerHTML = '⏳ <strong>Phase 3/3:</strong> Inserting records into Supabase...';
+
+    // 1. Restore Exams
+    if (data.data?.exams && data.data.exams.length) {
+      for (const ex of data.data.exams) {
+        await App.sbFetch('/rest/v1/exams', 'POST', ex).catch(() => {});
+      }
+    }
+
+    // 2. Restore Students
+    if (data.data?.students && data.data.students.length) {
+      for (const st of data.data.students) {
+        await App.sbFetch('/rest/v1/students', 'POST', st).catch(() => {});
+      }
+    }
+
+    // 3. Restore Results
+    if (data.data?.results && data.data.results.length) {
+      for (const res of data.data.results) {
+        await App.sbFetch('/rest/v1/results', 'POST', res).catch(() => {});
+      }
+    }
+
+    pBox.innerHTML = `
+      <strong style="color:var(--primary);font-size:15px;">🎉 Disaster Recovery & Migration Complete!</strong><br>
+      Successfully restored <strong>${data.counts?.exams || 0} exams</strong>, <strong>${data.counts?.results || 0} candidate submissions</strong>, and <strong>${data.counts?.students || 0} students</strong> from Google Drive into your fresh Supabase project!
+    `;
+    showToast('Full disaster recovery migration successful!', 'success');
+  } catch (err) {
+    pBox.innerHTML = `<strong style="color:var(--danger);">❌ Migration Error:</strong> ${err.message}`;
+    showToast('Migration failed: ' + err.message, 'danger');
+  }
+}
+
+async function purgeTestResults() {
+  const code = prompt('Type PURGE in capital letters to confirm deleting test submissions:');
+  if (code !== 'PURGE') return;
+  try {
+    await App.sbRpc('admin_purge_test_results', {});
+    showToast('Test submissions purged.', 'success');
+  } catch (e) {
+    showToast('Purge error: ' + e.message, 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadDriveStatus);
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

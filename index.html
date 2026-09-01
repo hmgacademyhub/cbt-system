@@ -115,6 +115,7 @@ footer a:hover{text-decoration:underline}
 
 @media(max-width:768px){.hero{padding:100px 16px 60px}.portals-grid,.steps,.features-grid,.brand-grid{grid-template-columns:1fr}.enterprise-banner{padding:16px;gap:10px}}
 </style>
+<script src="assets/js/site-help.js"></script>
 </head>
 <body>
 <nav>
@@ -149,39 +150,161 @@ footer a:hover{text-decoration:underline}
 <section class="portals" id="portals">
   <h2 style="font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,36px);font-weight:800;text-align:center;margin-bottom:8px;">Choose Your Role</h2>
   <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:32px;">Three dedicated portals &mdash; each purpose-built for its user.</p>
-  <div class="portals-grid">
-    <div class="portal-card"><div style="font-size:36px;">&#x1F58A;&#xFE0F;</div><h3>Educator &mdash; Teacher Dashboard</h3><p>Create and manage exams, upload questions via CSV, configure timing, and monitor student performance.</p>
+  <div class="portals-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
+    <div class="portal-card">
+      <div style="font-size:36px;">📝</div>
+      <h3>Candidate &mdash; Take Exam</h3>
+      <p>Enter exam code or link to sit single-subject or multi-subject exams. Zero app installation, zero signup.</p>
       <ul class="portal-features">
-        <li>CSV question upload &amp; question bank editor</li>
-        <li>6-character access codes, direct links &amp; WhatsApp sharing</li>
-        <li>Live leaderboard &amp; analytics charts</li>
-        <li>Export results as CSV</li>
-        <li><strong style="color:var(--primary);">Full exam editing &mdash; change everything</strong></li>
-        <li><strong style="color:var(--primary);">Add questions to existing exams</strong></li>
-      </ul>
-      <a href="teacher.html" class="btn btn-primary">Enter Dashboard &rarr;</a>
-    </div>
-    <div class="portal-card"><div style="font-size:36px;">&#x1F4DD;</div><h3>Student &mdash; Exam Portal</h3><p>Enter your exam code, fill your name, and start answering. No signup, no app install.</p>
-      <ul class="portal-features">
-        <li>No account required</li>
-        <li>Countdown timer &amp; question navigator</li>
-        <li>Flag questions for review</li>
-        <li>Instant result certificate</li>
-        <li><strong style="color:var(--primary);">Auto-save progress during exam</strong></li>
-        <li><strong style="color:var(--primary);">Tab-switch detection for integrity</strong></li>
+        <li>Multi-Subject UTME/JAMB Tabbed Switching</li>
+        <li>Face Gate &amp; Audio Activity Monitor</li>
+        <li>STEM Virtual Keyboard &amp; Calculator</li>
+        <li>Auto-Save Draft &amp; Offline JSON Backup</li>
       </ul>
       <a href="student.html" class="btn btn-primary">Enter Exam Portal &rarr;</a>
     </div>
-    <div class="portal-card"><div style="font-size:36px;">&#x2699;&#xFE0F;</div><h3>Admin &mdash; Super Panel</h3><p>Super-level control. Manage teachers, view platform-wide analytics, and configure system settings.</p>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">👨‍🏫</div>
+      <h3>Teacher &mdash; Assessment Hub</h3>
+      <p>Author exams, manage 17+ question types, import CSV/Excel, configure anti-cheat, and analyze results.</p>
       <ul class="portal-features">
-        <li>Manage all teachers &amp; accounts</li>
-        <li>Platform-wide analytics &amp; reports</li>
-        <li>System configuration &amp; controls</li>
-        <li>Admin-only secure login</li>
-        <li><strong style="color:var(--primary);">Approval workflow for teacher accounts</strong></li>
-        <li><strong style="color:var(--primary);">System backup and restore</strong></li>
+        <li>17+ Advanced Question Types Builder</li>
+        <li>Batch Actions (Open, Lock, Archive, Delete)</li>
+        <li>Reusable Exam Import &amp; Setting Templates</li>
+        <li>Live Candidate Proctoring &amp; Broadsheets</li>
+      </ul>
+      <a href="teacher.html" class="btn btn-primary">Enter Teacher Hub &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">🧪</div>
+      <h3>Multi-Subject &mdash; UTME Builder</h3>
+      <p>Build 4-in-1 combined examinations with separate subject question pools, subject tabs, and aggregate score tallies.</p>
+      <ul class="portal-features">
+        <li>JAMB / UTME / Common Entrance Mode</li>
+        <li>Single 6-Character Access Code</li>
+        <li>Per-Subject Progress &amp; Score Breakdown</li>
+        <li>Subject Switching without Loss of Answers</li>
+      </ul>
+      <a href="cbt-multi.html" class="btn btn-primary">Build Multi-Subject &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">🤖</div>
+      <h3>AI Prompts &mdash; Question Studio</h3>
+      <p>Generate copy-paste prompts for ChatGPT, Claude, and DeepSeek to get formatted CSV question banks without paid APIs.</p>
+      <ul class="portal-features">
+        <li>17+ Question Types Prompt Templates</li>
+        <li>Curriculum Targets (WAEC, JAMB, IGCSE, SAT)</li>
+        <li>In-App AI Output Validator</li>
+        <li>Instant Load into Question Bank</li>
+      </ul>
+      <a href="cbt-prompts.html" class="btn btn-primary">Open Prompt Studio &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">⚙️</div>
+      <h3>Generator &mdash; Standalone Builder</h3>
+      <p>Whitelabel, brand, and generate customized CBT System ZIP packages with your school logo, colors, and database keys.</p>
+      <ul class="portal-features">
+        <li>In-Browser Custom ZIP Generation</li>
+        <li>Whitelabel Logo &amp; Color Scheme Config</li>
+        <li>Injected Complete Schema SQL</li>
+        <li>1-Click Download &amp; Zero-Build Deploy</li>
+      </ul>
+      <a href="generator.html" class="btn btn-primary">Open System Generator &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">🛡️</div>
+      <h3>Admin &mdash; Super Supervisor</h3>
+      <p>Supervise platform metrics, approve teacher accounts, enforce PostgreSQL security guards, and view audit logs.</p>
+      <ul class="portal-features">
+        <li>Teacher Registration Approval Queue</li>
+        <li>Platform-Wide Performance Analytics</li>
+        <li>SQL Smoke Tester &amp; Security Audits</li>
+        <li>Global Candidate Results Supervision</li>
       </ul>
       <a href="admin.html" class="btn btn-primary">Admin Access &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">💾</div>
+      <h3>Admin Data &mdash; Google Drive Sync</h3>
+      <p>1-Click portable JSON envelope backups, automatic Google Drive cloud sync, and CSV table batch exports.</p>
+      <ul class="portal-features">
+        <li>Automated Google Drive Sync (drive.file)</li>
+        <li>Full Platform JSON Envelope Export/Restore</li>
+        <li>Batch CSV &amp; Excel Exporters</li>
+        <li>Danger Zone &amp; Practice Data Purge</li>
+      </ul>
+      <a href="admin-data.html" class="btn btn-primary">Data &amp; Cloud Sync &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">📦</div>
+      <h3>Storage &mdash; Quota Monitor</h3>
+      <p>Track Supabase 500MB free-tier limits, monitor table row sizes, browser localStorage, and optimize media storage.</p>
+      <ul class="portal-features">
+        <li>Database Table Row Count Analyzer</li>
+        <li>500 MB Free-Tier Quota Health</li>
+        <li>Browser LocalStorage Usage Gauge</li>
+        <li>Proctoring Snapshot Optimizer</li>
+      </ul>
+      <a href="storage.html" class="btn btn-primary">Open Storage Manager &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">🩺</div>
+      <h3>Health &mdash; 10-Layer Protection</h3>
+      <p>Automated latency monitor, 19+ RPC smoke tests, and 10-layer Supabase free-tier anti-pause keepalive tracker.</p>
+      <ul class="portal-features">
+        <li>Real-Time Connection Latency Ping</li>
+        <li>19+ RPC Function Smoke Tests</li>
+        <li>10-Layer Protection Matrix Tracker</li>
+        <li>Downloadable Health Audit Reports</li>
+      </ul>
+      <a href="platform-health.html" class="btn btn-primary">View Health &amp; RPCs &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">👥</div>
+      <h3>Roles &mdash; Access &amp; Approvals</h3>
+      <p>Manage user roles (Super Admin, Admin, Teacher, Student), handle pending account approvals, and inspect RBAC.</p>
+      <ul class="portal-features">
+        <li>Role-Based Access Control (RBAC)</li>
+        <li>Teacher Approval / Rejection Queue</li>
+        <li>Activate / Deactivate Accounts</li>
+        <li>Granular Security Matrix</li>
+      </ul>
+      <a href="status-manager.html" class="btn btn-primary">Manage Roles &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">📜</div>
+      <h3>Site License &mdash; Certificate</h3>
+      <p>Offline cryptographic HMAC-SHA256 perpetual license certificate, domain whitelabel binding, and school certificate.</p>
+      <ul class="portal-features">
+        <li>Perpetual Whitelabel Authorization</li>
+        <li>HMAC-SHA256 Cryptographic Verification</li>
+        <li>Zero Phone-Home Server Required</li>
+        <li>Printable Institution License Certificate</li>
+      </ul>
+      <a href="license.html" class="btn btn-primary">View Site License &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">📊</div>
+      <h3>Audit &mdash; Activity History</h3>
+      <p>Comprehensive chronological event logs of all assessment edits, code regenerations, score revisions, and syncs.</p>
+      <ul class="portal-features">
+        <li>Full Actor &amp; Action Event Trail</li>
+        <li>Search &amp; Filter by Date and Entity</li>
+        <li>Export Audit Log to CSV and JSON</li>
+        <li>Tamper-Evident Database Records</li>
+      </ul>
+      <a href="activity_log.html" class="btn btn-primary">View Audit Trail &rarr;</a>
     </div>
   </div>
 </section>
@@ -298,5 +421,6 @@ if('serviceWorker' in navigator && location.protocol !== 'file:'){
 </script>
 
 <script src="pwa_install_enforcer.js"></script>
+<script src="assets/js/chatbot.js"></script>
 </body>
 </html>

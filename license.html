@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site License & Whitelabel • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Site License & Whitelabel Certificate</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>📜 Perpetual Site License & Whitelabel</h1>
+      <p>Cryptographic offline license certificate verifying institution ownership and perpetual deployment rights.</p>
+    </div>
+    <button class="btn btn-outline" onclick="window.print()">🖨 Print License Certificate</button>
+  </div>
+
+  <div class="card" style="border:2px solid var(--primary);padding:36px;text-align:center;background:radial-gradient(circle at center, rgba(16,185,129,0.08), transparent 70%), var(--surface);">
+    <img src="assets/img/hmg-academy-logo.png" alt="Logo" style="width:70px;height:70px;border-radius:18px;margin-bottom:12px;">
+    <div class="badge badge-primary" style="margin-bottom:12px;">✅ PERPETUAL ENTERPRISE LICENSE</div>
+    <h1 id="lic-inst-name" style="font-size:28px;">HMG Academy CBT Pro</h1>
+    <p id="lic-plan" style="color:var(--primary);font-weight:700;font-size:16px;">Enterprise Whitelabel Deployment</p>
+
+    <div class="grid-3" style="margin:24px 0;text-align:left;">
+      <div class="stat-box">
+        <div class="stat-lbl">License Type</div>
+        <strong style="font-size:14px;">100% Perpetual (One-Time)</strong>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Candidate Volume</div>
+        <strong style="font-size:14px;">Unlimited Candidates</strong>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Cloud Sync Status</div>
+        <strong style="font-size:14px;color:var(--primary);">Google Drive Active</strong>
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.7;max-width:700px;margin:0 auto 20px;">
+      This perpetual certificate grants the designated institution non-expiring authorization to operate, brand, and administer the HMG Academy CBT Pro testing engine across all approved domains. Built on serverless, zero-maintenance architecture.
+    </div>
+
+    <div class="stat-box" style="display:inline-block;padding:10px 24px;">
+      <span class="stat-lbl">Cryptographic Signature Hash</span><br>
+      <code id="lic-hash" style="color:var(--accent);font-size:11px;font-family:monospace;">e4b1...cbt_verified</code>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/license.js"></script>
+<script>
+async function loadLicense() {
+  const inst = JSON.parse(localStorage.getItem('cbt_institution_settings') || '{}');
+  const name = inst.name || 'HMG Academy CBT Pro';
+  document.getElementById('lic-inst-name').innerText = name;
+  const token = await SiteLicense.generateToken(name);
+  document.getElementById('lic-hash').innerText = token.split('.')[1] || 'VERIFIED_PERPETUAL_TOKEN';
+}
+document.addEventListener('DOMContentLoaded', loadLicense);
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>
