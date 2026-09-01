@@ -1,0 +1,29 @@
+name: Supabase Free-Tier Heartbeat & Anti-Pause
+
+on:
+  schedule:
+    # Runs every 3 days at 06:00 UTC
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          URL="${SUPABASE_URL:-https://pstnsaqjshmtintjrnas.supabase.co}"
+          KEY="${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzdG5zYXFqc2htdGludGpybmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MDEzODUsImV4cCI6MjA5MTI3NzM4NX0.KNVgpVN0xp1njin1HL3udntc7psfzjnz7mqzpEN_Z6w}"
+          echo "Pinging Supabase at $URL..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/institutions?select=id,name&limit=1" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY")
+          echo "HTTP Response: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "✅ Supabase is active and healthy!"
+          else
+            echo "⚠️ Warning: Ping received status $STATUS"
+          fi
